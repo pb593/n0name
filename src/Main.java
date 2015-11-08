@@ -9,7 +9,7 @@ public class Main {
 
            Communicator c2 = new Communicator(50001);
            c2.start();
-           c2.send("localhost", 50001, "Hello, C1!");
+           c2.send("localhost", 50000, new Message("Hello, C1!"));
 
            Thread.sleep(3000); //wait for msg to arrive
        }

@@ -6,9 +6,10 @@ Implementation of the KleeQ protocol
 				
 
 2. Step 2: Iterative prototyping
-	
+
 	Prototype 1: Clique Formation
-		- multiple instances of the program start up at the config-specified ports
+		- multiple instances of the program start up at the config-specified
+	      ports
 		- a clique is formed:
 			1) one party takes the lead by a creating a singleton clique for itself
 			2) the user creates a random secret

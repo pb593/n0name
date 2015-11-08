@@ -1,6 +1,4 @@
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,6 +17,7 @@ class Communicator extends Thread {
     private final int id;
 
 
+
     public Communicator(int port) throws IOException {
         this.port = port;
         srvskt = new ServerSocket(port);
@@ -33,26 +32,27 @@ class Communicator extends Thread {
         while(!ERROR){
             try {
                 Socket s = srvskt.accept();
-                InputStream is = s.getInputStream();
-                byte[] data = new byte[5120]; //5kB
-                int n = is.read(data, 0, data.length);
-                System.out.printf("Communicator with id=%d received message \"%s\"\n", id, new String(data, 0, n));
+                ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+                Message msg = (Message) ois.readObject();
+                System.out.printf("Communicator with id=%d received message \"%s\"\n", id, msg.str);
             } catch (IOException e) {
-                System.err.println("The Communicator shut down after accepting a connection.");
+                System.err.println("The Communicator broke down after accepting a connection.");
                 ERROR = true;
+            } catch (ClassNotFoundException e) {
+                System.err.printf("New message of unknown type received by Communicator with id=%d", id);
             }
         }
     }
 
-    public boolean send(String host, int port, String str){
+    public boolean send(String host, int port, Message msg){
         try {
             Socket skt = new Socket(host, port);
-            OutputStream os = skt.getOutputStream();
-            os.write(str.getBytes());
-            System.out.printf("Communicator with id=%d sent message \"%s\" to %s:%d\n", id, str, host, port);
+            ObjectOutputStream oos = new ObjectOutputStream(skt.getOutputStream());
+            oos.writeObject(msg);
+            System.out.printf("Communicator with id=%d sent message \"%s\" to %s:%d\n", id, msg.str, host, port);
             return true;
         } catch (IOException e) {
-            System.err.printf("Error sending message \"%s\" to address %s:%d\n", str, host, port);
+            System.err.printf("Error sending message \"%s\" to address %s:%d\n", msg.str, host, port);
             return false;
         }
 
