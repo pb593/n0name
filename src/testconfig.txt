@@ -1,0 +1,3 @@
+Pavel   localhost:50000
+Edgar   localhost:50001
+Cata    localhost:50002

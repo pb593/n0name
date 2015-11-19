@@ -1,24 +1,25 @@
-import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-
 /**
  * Created by pb593 on 08/11/2015.
  *
  * This class will implement the basic network communication functionality required.
- * Will work on
  *
  */
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 class Communicator extends Thread {
 
+    private final Client client; //callbacks on received messages go here
     private final ServerSocket srvskt;
     private final int port;
     private final int id;
 
 
 
-    public Communicator(int port) throws IOException {
+    public Communicator(Client client, int port) throws IOException {
+        this.client = client;
         this.port = port;
         srvskt = new ServerSocket(port);
         this.setDaemon(true); //communicator is a daemon thread
@@ -34,12 +35,20 @@ class Communicator extends Thread {
                 Socket s = srvskt.accept();
                 ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
                 Message msg = (Message) ois.readObject();
-                System.out.printf("Communicator with id=%d received message \"%s\"\n", id, msg.str);
+                // spawn off a new thread to do a callback and handle the message
+                Thread handle = new Thread() {
+                    @Override
+                    public void run() {
+                        client.msgReceived(msg);
+                    }
+                };
+                handle.setDaemon(true);
+                handle.start(); //start the handler thread
             } catch (IOException e) {
                 System.err.println("The Communicator broke down after accepting a connection.");
                 ERROR = true;
             } catch (ClassNotFoundException e) {
-                System.err.printf("New message of unknown type received by Communicator with id=%d", id);
+                System.err.printf("New message of unknown type received by Communicator with id=%d\n", id);
             }
         }
     }

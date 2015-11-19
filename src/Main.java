@@ -1,24 +1,20 @@
-import java.io.IOException;
-
 public class Main {
    public static void main(String[] argv){
 
+       Client c1 = new Client("Pavel", 50000);
+       Client c2 = new Client("Edgar", 50001);
+       Client c3 = new Client("Cata", 50002);
+
+       c1.start();
+       c2.start();
+       c3.start();
+
        try {
-           Communicator c1 = new Communicator(50000);
-           c1.start();
-
-           Communicator c2 = new Communicator(50001);
-           c2.start();
-           c2.send("localhost", 50000, new Message("Hello, C1!"));
-
-           Thread.sleep(3000); //wait for msg to arrive
-       }
-       catch (IOException e) {
+           Thread.sleep(1000); //sleep for 1s to make sure everyone is running
+       } catch (InterruptedException e) {
            e.printStackTrace();
        }
-       catch (InterruptedException e) {
-           e.printStackTrace();
-       }
+
 
 
    }
