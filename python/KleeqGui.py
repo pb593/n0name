@@ -32,7 +32,7 @@ from User import User
 from Packet import Packet
 from Util import Hash
 from Engine import *
-from Message import Message
+from messages.Message import messages.Message
 from Listener import Listener
 
 class KleeqGui:
@@ -101,7 +101,7 @@ class KleeqGui:
         
     def __send(self):
         s = self._entry.get()
-        m =Message (self._srv.cliques[self._active]._user, s)
+        m =messages.Message (self._srv.cliques[self._active]._user, s)
         self._srv.cliques[self._active].write_message (m)
         self._entry.delete(0,END)
         self.__update()

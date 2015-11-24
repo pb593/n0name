@@ -5,6 +5,8 @@
  *
  */
 
+import messages.Message;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -29,7 +31,7 @@ class Communicator extends Thread {
     @Override
     public void run() { //start listening on the port for incoming messages
         boolean ERROR = false;
-        System.out.printf("Communicator with id=%d has started on port=%d\n", id, port);
+        Main.logger.info(String.format("Communicator with id=%d has started on port=%d\n", id, port));
         while(!ERROR){
             try {
                 Socket s = srvskt.accept();
@@ -45,10 +47,12 @@ class Communicator extends Thread {
                 handle.setDaemon(true);
                 handle.start(); //start the handler thread
             } catch (IOException e) {
-                System.err.println("The Communicator broke down after accepting a connection.");
+                Main.logger.severe(String.format("Communicator with id = %d has broken down upon accepting a connection",
+                                                                                                            this.id));
                 ERROR = true;
             } catch (ClassNotFoundException e) {
-                System.err.printf("New message of unknown type received by Communicator with id=%d\n", id);
+                Main.logger.warning(String.format("New message of unknown type received by Communicator with id=%d\n",
+                                                                                                            this.id));
             }
         }
     }
@@ -58,10 +62,12 @@ class Communicator extends Thread {
             Socket skt = new Socket(host, port);
             ObjectOutputStream oos = new ObjectOutputStream(skt.getOutputStream());
             oos.writeObject(msg);
-            System.out.printf("Communicator with id=%d sent message \"%s\" to %s:%d\n", id, msg.str, host, port);
+            Main.logger.config(String.format("Communicator with id=%d sent message \"%s\" to %s:%d\n",
+                                                                                            this.id, msg.str, host, port));
             return true;
         } catch (IOException e) {
-            System.err.printf("Error sending message \"%s\" to address %s:%d\n", msg.str, host, port);
+            Main.logger.warning(String.format("Error sending message \"%s\" to address %s:%d\n",
+                                                                                            msg.str, host, port));
             return false;
         }
 

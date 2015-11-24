@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ###
 
-class Message(object):
+class messages.Message(object):
     """
     This class represents a single message sent in the clique. It consists of the
     author, the text, the time (lamport time), and the type of message.

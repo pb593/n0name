@@ -2,60 +2,83 @@
  * Created by pb593 on 19/11/2015.
  */
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import messages.DHMessage;
+import messages.Message;
 
-public class Client extends Thread {
+import java.io.IOException;
+import java.util.*;
+
+public class Client implements Runnable {
 
     private final String name;
     private final int port;
     private final Communicator comm;
     private final HashMap<String, Clique> cliques = new HashMap<>();
+    private final Crypto crypto = new Crypto();
 
-    public Client(String name, int port) {
+    public Client(String name) {
         this.name = name;
-        this.port = port;
 
+        Random rnd = new Random();
+        int port = 0; // prepare to choose randomly
         Communicator commtmp = null;
-        try {
-            commtmp = new Communicator(this, port);
-            // start communicator, giving it a reference back to Client
+        while(true) { //look for a free port
+            port = 50000 + rnd.nextInt(10000); //choose a random port between 50k and 60k
+            try {
+                commtmp = new Communicator(this, port); //try to bind to port
+                // start communicator, giving it a reference back to Client
+            } catch (IOException e) { // can't bind to the port
+                Main.logger.config("Communicator unable to bind to port " + port + ". Looking for another one.");
+                continue;
+            }
+            break;
         }
-        catch (IOException e) { // can't bind to the port (usually because it's taken)
-            System.err.printf("Client with name = %s unable to bind to port = %d", name, port);
-            System.exit(-1); // just terminate
-        }
+        this.port = port;
         comm = commtmp;
     }
 
 
     @Override
     public void run() { //
-        // this will probably become the main func in the final release
-        //will probably be showing the CLI here
+        // main function of Client
         comm.start(); //start our communicator
+        Scanner scanner = new Scanner(System.in);
+        while(true) {
+            System.out.println("Enter msg in format 'host:port|msg':");
+            String str =scanner.nextLine();
+            if(str.equals("exit"))
+                break;
+            else {
+                String[] tokens = str.split("\\|");
+                String dest = tokens[0], msg = tokens[1];
+                String[] hostport = dest.split(":");
+                // do DH key agreement with target host
+                try {
+                    byte[] myPubKey = crypto.generatePubKey();
+                    DHMessage dhmsg = new DHMessage(myPubKey);
+                    comm.send(hostport[0], Integer.parseInt(hostport[1]), dhmsg);
+                    // wait for DH response
+                    while(true) {
+                        synchronized (crypto.commonSecret) {
+                            if (crypto.commonSecret != null)
+                                break;
+                        }
+                    }
+                    // now common secret has been established
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
+                comm.send(hostport[0], Integer.parseInt(hostport[1]), new Message(
+                                                                        String.format("[%s] %s", this.name, msg)));
+            }
+        }
     }
 
     public void msgReceived(Message msg) {
-        //callback from the Communicator (always happens in a separate thread)
-        String str = msg.str;
-        String[] tokens = str.split("|");
-        String msgType = tokens[0];
-        if(msgType.equals("Invite")){
-            String cliqueName = tokens[1];
-            Clique c = cliques.get(cliqueName);
-            // TODO
-        }
-        else if(msgType.equals("InviteResp")) {
-            // TODO
-        }
-        else {
-            System.err.printf("A with unknown prefix %s has been received by %s at port %d\n",
-                    msgType, this.name, this.port);
-            System.exit(-1);
-        }
+        System.out.printf("Received message: '%s'\n", msg.str);
+
     }
 
     public boolean startClique(String name, Set<User> users) {

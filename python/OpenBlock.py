@@ -19,7 +19,7 @@
 
 from Block import Block
 from SealedBlock import SealedBlock
-from Message import Message
+from messages.Message import messages.Message
 
 
 class OpenBlock(Block):

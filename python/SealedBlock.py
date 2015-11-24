@@ -18,7 +18,7 @@
 ###
 
 from Block import Block
-from Message import Message
+from messages.Message import messages.Message
 from Util import Hash
 
 import pickle

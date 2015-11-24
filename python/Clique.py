@@ -25,7 +25,7 @@ from PatchBlock import PatchBlock
 from Timestamper import Timestamper
 from BlockManager import BlockManager
 from Packet import Packet
-from Message import Message
+from messages.Message import messages.Message
 from Util import Hash
 from Util import MAC
 from Util import Cipher
@@ -128,7 +128,7 @@ class Clique:
         This method is used to add a sequencing message that indicates the user
         has been involving in a patching.
         """
-        message = Message(self._user, " give a patching.", self._timestamper.stamp())
+        message = messages.Message(self._user, " give a patching.", self._timestamper.stamp())
         self._block_mgr._open_block.add_message(message)
         self._block_mgr.update_version() #todo optimize
 
@@ -240,7 +240,7 @@ class Clique:
             return None
             
         comment = '''
-        message = Message(self._user, " give a patching.", self._timestamper.stamp(), "sequence")
+        message = messages.Message(self._user, " give a patching.", self._timestamper.stamp(), "sequence")
         self._block_mgr._open_block.add_message(message)
         self._block_mgr.update_version() #todo optimize
         retpatch.add_message(message)

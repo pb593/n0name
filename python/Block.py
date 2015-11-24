@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ###
 
-from Message import Message
+from messages.Message import messages.Message
 import sys
 
 class Block:

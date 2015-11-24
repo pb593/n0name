@@ -1,21 +1,29 @@
+import java.util.Random;
+import java.util.Scanner;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class Main {
-   public static void main(String[] argv){
 
-       Client c1 = new Client("Pavel", 50000);
-       Client c2 = new Client("Edgar", 50001);
-       Client c3 = new Client("Cata", 50002);
+    public final static Logger logger = Logger.getAnonymousLogger();
 
-       c1.start();
-       c2.start();
-       c3.start();
+    public static void main(String[] argv){
 
-       try {
-           Thread.sleep(1000); //sleep for 1s to make sure everyone is running
-       } catch (InterruptedException e) {
-           e.printStackTrace();
-       }
+        //tune the logger
+        logger.setUseParentHandlers(false); //disable default handlers
+        logger.setLevel(Level.INFO); //set level for logger
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.INFO); //set level for handler
+        logger.addHandler(handler);
 
+        // get username and choose port
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter your username: ");
+        String user = scanner.nextLine();
 
+        Client cl = new Client(user); //create a client on that port
+        cl.run(); //run the client in the same thread
 
-   }
+    }
 }

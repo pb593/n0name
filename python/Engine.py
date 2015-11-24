@@ -24,7 +24,7 @@ import socket
 from ConfigParser import SafeConfigParser
 from Clique import Clique
 from KeyManager import KeyManager
-from Message import Message
+from messages.Message import messages.Message
 from User import User
 from Packet import Packet
 from Util import Hash
@@ -111,6 +111,6 @@ class CliqueServerDaemon (threading.Thread):
 				sys.stdout.write ("error: no active clique.\n")
 			else:
 				if l:
-					srv.cliques[active].write_message (Message (srv.cliques[active]._user, l.strip ('\n')))
+					srv.cliques[active].write_message (messages.Message (srv.cliques[active]._user, l.strip ('\n')))
 
 """
