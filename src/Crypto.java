@@ -50,6 +50,7 @@ public class Crypto {
     }
 
     public byte[] encrypt(byte[] plain) {
+        // fictitious encrypt for debugging purposes
         byte[] codons = {0x55,(byte)0xFF};
         byte[] rst = new byte[plain.length];
         for(int i = 0; i < plain.length; i++) {
@@ -60,6 +61,7 @@ public class Crypto {
     }
 
     public byte[] decrypt(byte[] cipher) {
+        // fictitious decrypt, for debugging
         byte[] codons = {0x55, (byte)0xFF};
         byte[] rst = new byte[cipher.length];
         for(int i = 0; i < cipher.length; i++) {

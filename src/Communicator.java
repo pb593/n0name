@@ -3,11 +3,13 @@
  *
  * This class will implement the basic network communication functionality required.
  *
+ * Class will be used my multiple instance of other classes for communication, so
+ * needs to be threadsafe.
+ *
  */
 
-import messages.Message;
-
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -57,17 +59,17 @@ class Communicator extends Thread {
         }
     }
 
-    public boolean send(String host, int port, Message msg){
+    public synchronized boolean send(InetSocketAddress dest, Message msg){
         try {
-            Socket skt = new Socket(host, port);
+            Socket skt = new Socket(dest.getAddress(), dest.getPort());
             ObjectOutputStream oos = new ObjectOutputStream(skt.getOutputStream());
             oos.writeObject(msg);
             Main.logger.config(String.format("Communicator with id=%d sent message \"%s\" to %s:%d\n",
-                                                                                            this.id, msg.str, host, port));
+                    this.id, msg.msg, dest.getHostString() , dest.getPort()));
             return true;
         } catch (IOException e) {
             Main.logger.warning(String.format("Error sending message \"%s\" to address %s:%d\n",
-                                                                                            msg.str, host, port));
+                    msg.msg, msg.msg, dest.getHostString() , dest.getPort()));
             return false;
         }
 
