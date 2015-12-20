@@ -85,9 +85,3 @@ def display(): # for debugging purposes
 @app.route("/")
 def main():
     return "Welcome!"
-
-
-if __name__ == "__main__":
-    
-    # start the webapp
-    app.run()
