@@ -3,30 +3,21 @@
  */
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Client implements Runnable {
 
     private final String userID;
-    private final int port;
     private final Communicator comm;
     private final ConcurrentHashMap<String, Clique> cliques = new ConcurrentHashMap<>();
 
-    public Client(String userID, Integer port) {
-        this.userID = userID;
-        this.port = port;
-        Communicator commtmp = null;
-        try {
-            commtmp = new Communicator(this, port);
-        } catch (IOException e) {
-            System.out.println("Comm kaput!");
-            System.exit(-1);
-        }
-        comm = commtmp;
+    public Client(String userID) {
 
-        /*
         Random rnd = new Random();
         int port = 0; // prepare to choose randomly
         Communicator commtmp = null;
@@ -41,9 +32,8 @@ public class Client implements Runnable {
             }
             break;
         }
-        this.port = port;
+        this.userID = userID;
         comm = commtmp;
-        */
     }
 
     public String getUserID() {
@@ -75,10 +65,45 @@ public class Client implements Runnable {
     public void run() {
         // main function of Client
         comm.start(); //start our communicator
+
+        // start separate thread to report my address to address server
+        Thread th = new Thread() {
+            @Override
+            public void run() {
+
+                while(true) {
+                    AddressBook.checkin(userID, comm.getPort());
+                    try {
+                        Thread.sleep(5000); // sleep for 5 seconds
+                    } catch (InterruptedException e) {
+                        Main.logger.severe("Sleep() call failed in address reporing thread.");
+                    }
+                }
+
+            }
+        };
+        th.setDaemon(true);
+        th.start();
+
+        // CLI starts here
         Scanner scanner = new Scanner(System.in);
         while(true) {
             cls(); // clear screen
             System.out.println("NoNaMe Chat\u2122");
+
+            // output other members which are currently online
+            HashMap<String, InetSocketAddress> users = AddressBook.getAll();
+            if(users.size() > 0) { // more than one person (me) online
+                System.out.println("Users online:");
+                for(String otherUser: users.keySet()) {
+                    System.out.printf(" - %s\n", otherUser);
+                }
+            }
+            else {
+                System.out.println("None of the other NoNaMe users are currently online.");
+            }
+
+            // output which groups I'm currently in
             if(cliques.keySet().size() > 0) { // if there are any active cliques
                 System.out.println("Groups:");
                 for (String cliqueName : cliques.keySet()) {
@@ -139,7 +164,7 @@ public class Client implements Runnable {
                 if(tokens.length >= 3) {
                     String userID = tokens[1];
                     String groupName = tokens[2];
-                    if(cliques.containsKey(groupName) && Main.addressBook.containsKey(userID)){
+                    if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
                         Clique c = cliques.get(groupName); // get clique with this name
                         c.addMember(userID); // add user to group
                         System.out.printf("Successfully added user '%s' to group '%s'\n", userID, groupName);

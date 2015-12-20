@@ -1,10 +1,5 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Scanner;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
@@ -13,8 +8,6 @@ import java.util.logging.Logger;
 public class Main {
 
     public final static Logger logger = Logger.getAnonymousLogger();
-
-    public final static HashMap<String, InetSocketAddress> addressBook = new HashMap<>();
 
     public static void main(String[] argv){
 
@@ -25,6 +18,8 @@ public class Main {
         handler.setLevel(Level.INFO); //set level for handler
         logger.addHandler(handler);
 
+
+        /*
         // parse out debugging config
         try (BufferedReader br = new BufferedReader(new FileReader("src/testconfig.txt"))) {
             String line;
@@ -54,8 +49,12 @@ public class Main {
 
         String userID = keyList.get(opt);
         InetSocketAddress hostport = addressBook.get(userID);
+        */
+        System.out.print("Please pick a username:\n> ");
+        Scanner scanner = new Scanner(System.in);
+        String userID = scanner.nextLine().trim();
 
-        Client cl = new Client(userID, hostport.getPort());
+        Client cl = new Client(userID);
         cl.run(); //run the client in the same thread
 
     }

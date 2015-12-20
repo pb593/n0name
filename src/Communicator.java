@@ -74,4 +74,8 @@ class Communicator extends Thread {
         }
 
     }
+
+    public Integer getPort() {
+        return port; // reading and immutable value, so no need for syncronization
+    }
 }

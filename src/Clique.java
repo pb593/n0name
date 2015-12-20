@@ -40,9 +40,9 @@ public class Clique {
 
     public void addMember(String userID) {
 
-        if(Main.addressBook.containsKey(userID)) {
+        if(AddressBook.contains(userID)) {
             // get address of the destination
-            InetSocketAddress dest = Main.addressBook.get(userID);
+            InetSocketAddress dest = AddressBook.lookup(userID);
 
             // form a message, telling the dest what clique they've been added to, with what peers
             StringBuffer sb = new StringBuffer("__inviteMsg__|"); // init __addMember__ msg
@@ -53,7 +53,7 @@ public class Clique {
 
             // notify everyone else in clique about new user
             for(String peer: members.keySet()) {
-                InetSocketAddress peerAddr = Main.addressBook.get(peer); // get address of peer
+                InetSocketAddress peerAddr = AddressBook.lookup(peer); // get address of peer
 
                 comm.send(peerAddr, new Message("__userAddedNotification__|" + userID, client.getUserID(), this.name));
             }
@@ -88,8 +88,8 @@ public class Clique {
         /* Send message to the whole clique (including myself) */
 
         for(String userID: members.keySet()) {
-            if(Main.addressBook.containsKey(userID)) {
-                InetSocketAddress dest = Main.addressBook.get(userID);
+            if(AddressBook.contains(userID)) {
+                InetSocketAddress dest = AddressBook.lookup(userID);
 
                 // send via communicator
                 comm.send(dest, msg);
