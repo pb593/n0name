@@ -11,6 +11,29 @@ logging.basicConfig(format = "%(asctime)s %(levelname)s %(message)s",
 book_lock = threading.Lock()
 book = dict() # dictionary: userID -> ("ipaddr:port", last_checkin_time)
 
+# start the validator thread
+def validator():
+    # runs in separate thread, constantly goes through the whole book
+    # removing all items older than 7s
+    logging.info("[VALIDATOR] thread started")
+    
+    while(True):
+        logging.info("[VALIDATOR] wakes up")
+        book_lock.acquire()    
+        logging.info("[VALIDATOR] book_lock:acq")
+        for userID in book.keys():
+            (addr, ts) = book[userID]
+            if(int(time.time() - ts) > 7):  # old
+                logging.info("[VALIDATOR] deletes expired entry for %s"%userID)
+                del book[userID]            # remove
+        book_lock.release()
+        logging.info("[VALIDATOR] book_lock:rel")
+        time.sleep(5) # sleep for 8 sec
+
+th = threading.Thread(target = validator)
+th.setDaemon(True) # kill thread when prog exits
+th.start()
+
 @app.route("/check-in/<userID>/<addr>/<int:port>")
 def checkin(userID, addr, port): # request to check in
     userID = str(userID)
@@ -62,32 +85,9 @@ def display(): # for debugging purposes
 @app.route("/")
 def main():
     return "Welcome!"
-    
-def validator():
-    # runs in separate thread, constantly goes through the whole book
-    # removing all items older than 7s
-    logging.info("[VALIDATOR] thread started")
-    
-    while(True):
-        logging.info("[VALIDATOR] wakes up")
-        book_lock.acquire()    
-        logging.info("[VALIDATOR] book_lock:acq")
-        for userID in book.keys():
-            (addr, ts) = book[userID]
-            if(int(time.time() - ts) > 7):  # old
-                logging.info("[VALIDATOR] deletes expired entry for %s"%userID)
-                del book[userID]            # remove
-        book_lock.release()
-        logging.info("[VALIDATOR] book_lock:rel")
-        time.sleep(5) # sleep for 8 sec
 
 
 if __name__ == "__main__":
-    # start the validator
-    logging.info("Function main() started")
-    th = threading.Thread(target = validator)
-    th.setDaemon(True) # kill thread when prog exits
-    th.start()
     
     # start the webapp
     app.run()
