@@ -8,75 +8,60 @@ app = Flask(__name__)
 logging.basicConfig(format = "%(asctime)s %(levelname)s %(message)s",
                     filename = 'mylog.txt', level = logging.DEBUG)
 
-book_lock = threading.Lock()
 book = dict() # dictionary: userID -> ("ipaddr:port", last_checkin_time)
 
 # start the validator thread
 def validator():
-    # runs in separate thread, constantly goes through the whole book
+    # goes through the whole book
     # removing all items older than 7s
-    logging.info("[VALIDATOR] thread started")
+    logging.info("[VALIDATOR] method called")
     
-    while(True):
-        logging.info("[VALIDATOR] wakes up")
-        book_lock.acquire()    
-        logging.info("[VALIDATOR] book_lock:acq")
-        for userID in book.keys():
-            (addr, ts) = book[userID]
-            if(int(time.time() - ts) > 7):  # old
-                logging.info("[VALIDATOR] deletes expired entry for %s"%userID)
-                del book[userID]            # remove
-        book_lock.release()
-        logging.info("[VALIDATOR] book_lock:rel")
-        time.sleep(5) # sleep for 8 sec
-
-th = threading.Thread(target = validator)
-th.setDaemon(True) # kill thread when prog exits
-th.start()
+    for userID in book.keys():
+        (addr, ts) = book[userID]
+        if(int(time.time() - ts) > 7):  # old
+            logging.info("[VALIDATOR] deletes expired entry for %s"%userID)
+            del book[userID]            # remove
 
 @app.route("/check-in/<userID>/<addr>/<int:port>")
 def checkin(userID, addr, port): # request to check in
+
+    validator() # validate all records
+    
     userID = str(userID)
     addr = str(addr)
     ts = time.time()
     logging.info("CHECK-IN by user %s from %s. TS = %s" 
         % (userID, addr + str(port), str(ts)))
     
-    book_lock.acquire()
-    logging.info("book_lock:acq")
     book[userID] = (addr + ":" + str(port), ts) # put into book
-    book_lock.release()
-    logging.info("book_lock:rel")
     
     return "ACK"
 
 @app.route("/lookup/<userID>")
 def lookup(userID): # lookup the address of a user
+
     rst = "None"
     logging.info("LOOKUP of user %s" % userID)
+    
+    validator() # validate all records
 
-    book_lock.acquire()
-    logging.info("book_lock:acq")
     if userID in book:
         rst = book[userID][0] # take first element of (addr, ts) tuple
-    book_lock.release()
-    logging.info("book_lock:rel")
     
     return rst
     
 @app.route("/display")
 def display(): # for debugging purposes
+
     logging.info("DISPLAY request received")
     
+    validator() # validate all records
+    
     rst = ""
-    book_lock.acquire()
-    logging.info("book_lock:acq")
     logging.info("Address book contains %d entries" % len(book))
     for userID in book:
         (addr, ts) = book[userID]
         rst += "%s %s <br>" % (userID.ljust(25), addr.ljust(25))
-    book_lock.release()
-    logging.info("book_lock:rel")
     
     return rst
     
@@ -84,4 +69,18 @@ def display(): # for debugging purposes
 
 @app.route("/")
 def main():
+    
+    validator() # validate all records
+    
     return "Welcome!"
+    
+@app.errorhandler(404)
+def page_not_found(e):
+    
+    validator() # validate all records
+    
+    return 'Sorry, nothing at this URL.', 404
+
+# only for debugging, delete in deployment    
+if __name__ == "__main__":
+    app.run()
