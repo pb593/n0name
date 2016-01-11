@@ -1,3 +1,0 @@
-Pablo   localhost:50000
-Edgar   localhost:50001
-Girl   localhost:50002

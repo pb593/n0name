@@ -8,6 +8,8 @@
  *
  */
 
+import message.Message;
+
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -64,12 +66,12 @@ class Communicator extends Thread {
             Socket skt = new Socket(dest.getAddress(), dest.getPort());
             ObjectOutputStream oos = new ObjectOutputStream(skt.getOutputStream());
             oos.writeObject(msg);
-            Main.logger.config(String.format("Communicator with id=%d sent message \"%s\" to %s:%d\n",
-                    this.id, msg.msg, dest.getHostString() , dest.getPort()));
+            Main.logger.config(String.format("Communicator with id=%d sent message to %s:%d\n",
+                                                                    this.id, dest.getHostString() , dest.getPort()));
             return true;
         } catch (IOException e) {
-            Main.logger.warning(String.format("Error sending message \"%s\" to address %s:%d\n",
-                    msg.msg, msg.msg, dest.getHostString() , dest.getPort()));
+            Main.logger.warning(String.format("Error sending message to address %s:%d\n",
+                                                                            dest.getHostString() , dest.getPort()));
             return false;
         }
 

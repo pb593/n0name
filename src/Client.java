@@ -2,6 +2,12 @@
  * Created by pb593 on 19/11/2015.
  */
 
+import com.sun.deploy.util.StringUtils;
+import message.InviteMessage;
+import message.InviteResponseMessage;
+import message.Message;
+import message.TextMessage;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -48,14 +54,15 @@ public class Client implements Runnable {
         String cliqueName = msg.cliqueName;
         if(cliques.containsKey(cliqueName)) { // if clique is already known to me
             Clique c = cliques.get(cliqueName);
-            c.messageReceived(msg);
+            c.messageReceived(msg); // give callback to the specific clique
         }
-        else if(msg.msg.startsWith("__inviteMsg__")) { // if somebody added me to this clique
-            String[] tokens = msg.msg.split("\\|");
-            Clique c = new Clique(cliqueName, this, comm, tokens[1]); // cliques are never empty, so do not need checks
-            cliques.put(cliqueName, c);
+        else if(msg instanceof InviteMessage) { // if somebody added me to this clique
+            Clique c = new Clique(cliqueName, this, comm, ((InviteMessage) msg).userList); // cliques are never empty, so do not need checks
+            cliques.put(cliqueName, c); // put into the clique hashmap
+            comm.send(AddressBook.lookup(msg.author), new InviteResponseMessage(true, this.userID, cliqueName));
+                                                                                // reply, accepting the invitation
         }
-        else { // never seen this clique before
+        else { // never see this clique before and isn't an invitation
             System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
         }
 
@@ -217,12 +224,12 @@ public class Client implements Runnable {
         while(true) {
             cls();
             System.out.printf("Group Name: %s\n", clique.getName());
-            System.out.printf("Members: %s\n", clique.getUserListString());
-            List<Message> last5 = clique.getLastFive();
+            System.out.printf("Members: %s\n", StringUtils.join(clique.getUserList(), ", "));
+            List<TextMessage> last5 = clique.getLastFive();
             if(last5.size() > 0) {
                 System.out.printf("Last few messages:\n");
-                for(Message msg: last5) {
-                    System.out.printf("\t%s: %s\n", msg.author, msg.msg);
+                for(TextMessage msg: last5) {
+                    System.out.printf("\t%s: %s\n", msg.author, msg.text);
                 }
             }
             else {
@@ -239,7 +246,7 @@ public class Client implements Runnable {
                 return;
             else if(str.startsWith("msg")) { // WRITE MESSAGE
                 String txt = (str.charAt(3) == ' ') ? str.substring(4) : str.substring(3);
-                Message newmsg = new Message(txt, this.userID, clique.getName()); // create new message
+                TextMessage newmsg = new TextMessage(txt, this.userID, clique.getName()); // create new message
                 clique.sendMessage(newmsg); //send message to clique using Communicator
                 System.out.println("Message sent.");
                 pressAnyKeyToContinue();
