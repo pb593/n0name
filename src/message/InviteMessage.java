@@ -1,7 +1,7 @@
 package message;
 
 import java.io.Serializable;
-import java.security.PublicKey;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -12,10 +12,13 @@ import java.util.Set;
 public class InviteMessage extends Message implements Serializable {
 
     public List<String> userList;
+    public final BigInteger pubKey; // public key (G ^ secret mod P)
 
-    public InviteMessage(Set<String> users, String author, String cliqueName) {
+
+    public InviteMessage(Set<String> users, BigInteger pubKey ,String author, String cliqueName) {
         super(author, cliqueName); // call Message constructor
         userList = new ArrayList<>(users);
+        this.pubKey = pubKey;
     }
 
 }

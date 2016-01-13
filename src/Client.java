@@ -57,10 +57,8 @@ public class Client implements Runnable {
             c.messageReceived(msg); // give callback to the specific clique
         }
         else if(msg instanceof InviteMessage) { // if somebody added me to this clique
-            Clique c = new Clique(cliqueName, this, comm, ((InviteMessage) msg).userList); // cliques are never empty, so do not need checks
+            Clique c = new Clique(cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
             cliques.put(cliqueName, c); // put into the clique hashmap
-            comm.send(AddressBook.lookup(msg.author), new InviteResponseMessage(true, this.userID, cliqueName));
-                                                                                // reply, accepting the invitation
         }
         else { // never see this clique before and isn't an invitation
             System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);

@@ -1,5 +1,6 @@
 import message.*;
 
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ public class Clique {
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
+    private final Cryptographer crypto = new Cryptographer("AES", 256);
 
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
@@ -30,7 +32,7 @@ public class Clique {
         }
     }
 
-    public Clique(String name, Client client, Communicator comm, List<String> listOfUsers) {
+    public Clique(String name, Client client, Communicator comm, InviteMessage invmsg) {
         // this constructor is used if a third party adds me to the clique
 
         this.name = name;
@@ -40,10 +42,16 @@ public class Clique {
         // put all users into the members list (including myself)
         synchronized (members) {
             members.put(client.getUserID(), new User(client.getUserID()));
-            for (String username : listOfUsers) {
+            for (String username : invmsg.userList) {
                 members.put(username, new User(username));
             }
         }
+
+        comm.send(AddressBook.lookup(invmsg.author),
+                new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name));
+                                                            // reply, accepting the invitation and sending my pubkey
+
+        crypto.acceptPublicKey(invmsg.pubKey); // update the common secret
     }
 
     public void addMember(String userID) {
@@ -54,7 +62,8 @@ public class Clique {
 
             // send the invite
             synchronized (members) {
-                comm.send(dest, new InviteMessage(members.keySet(), client.getUserID(), this.name));
+                comm.send(dest, new InviteMessage(members.keySet(), crypto.getPublicKey(),
+                                                                        client.getUserID(), this.name));
             }
 
             // mark invite as pending response
@@ -109,26 +118,44 @@ public class Clique {
         /* Callback received from Client class */
         if(msg instanceof UserAddedNotificationMessage) { // notification about a new added member
             String newUserID = ((UserAddedNotificationMessage) msg).userID;
+            BigInteger newUserPubKey = ((UserAddedNotificationMessage) msg).pubKey;
+
             synchronized (members) {
                 members.put(newUserID, new User(newUserID)); // insert the new user into members hashmap
             }
+
+            // update the common secret with new user's pubkey
+            crypto.acceptPublicKey(newUserPubKey);
         }
         else if(msg instanceof InviteResponseMessage) { // response to an InviteMessage sent by me earlier
             boolean isValid = pendingInvites.contains(msg.author); // check if I actually invited this person
-            boolean isAccept = ((InviteResponseMessage) msg).isAccept; //what they replied (yes/no)
+
+            InviteResponseMessage invrespmsg = ((InviteResponseMessage) msg); // cast
+            boolean isAccept = invrespmsg.isAccept; //what they replied (yes/no)
 
             if(isValid && isAccept) { // if response valid and reply is positive
-                String newUserID = msg.author;
-                // notify everyone else in clique about new user
+                String newUserID = invrespmsg.author;
+                BigInteger newUserPubKey = invrespmsg.pubKey;
+
+                // notify everyone else in clique (except myself) about new user
                 synchronized (members) {
                     for(String peer: members.keySet()) {
-                        InetSocketAddress peerAddr = AddressBook.lookup(peer); // get address of peer
 
-                        comm.send(peerAddr, new UserAddedNotificationMessage(newUserID, client.getUserID(), this.name));
+                        if(!peer.equals(this.client.getUserID())) {
+                            InetSocketAddress peerAddr = AddressBook.lookup(peer); // get address of peer
+
+                            comm.send(peerAddr, new UserAddedNotificationMessage(newUserID, newUserPubKey,
+                                    client.getUserID(), this.name));
+                        }
+
                     }
 
                     members.put(newUserID, new User(newUserID));
                 }
+
+                // update the common secret with new user's pubkey
+                crypto.acceptPublicKey(newUserPubKey);
+
             }
         }
         else if(msg instanceof TextMessage) { // it's just a simple message, insert into history
