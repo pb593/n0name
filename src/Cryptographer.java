@@ -79,6 +79,8 @@ public class Cryptographer {
         secretKey = new SecretKeySpec(secretExpBytes, 0, secretExpBytes.length, "AES");
                                                                 // re-instantiate the secret key
 
+        System.out.printf("New secret exponent: %s\n", secretExp.toString()); //TODO: remove in prod version
+
     }
 
     public byte[] encrypt(byte[] plaintext) {

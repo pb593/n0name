@@ -1,7 +1,9 @@
 package message;
 
+import jdk.nashorn.internal.parser.JSONParser;
+import org.json.simple.JSONObject;
+
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
@@ -16,6 +18,24 @@ public class UserAddedNotificationMessage extends Message implements Serializabl
         super(author, cliqueName);
         this.userID = userID;
         this.pubKey = pubKey;
+    }
+
+    public UserAddedNotificationMessage(JSONObject json) { // construct from JSON
+        super((String)json.get("author"), (String)json.get("cliqueName"));
+        this.userID = (String)json.get("userID");
+        this.pubKey = new BigInteger((String)json.get("publicKey"));
+    }
+
+    @Override
+    public String toJSON() {
+        JSONObject obj = super.startJSON();
+
+        obj.put("msg_type", this.getClass().getSimpleName());
+        obj.put("userID", userID);
+        obj.put("publicKey", pubKey.toString());
+
+        return obj.toJSONString();
+
     }
 
 }

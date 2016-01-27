@@ -150,7 +150,7 @@ public class Clique {
 
                     }
 
-                    members.put(newUserID, new User(newUserID));
+                    members.put(newUserID, new User(newUserID)); // add new user to clique
                 }
 
                 // update the common secret with new user's pubkey

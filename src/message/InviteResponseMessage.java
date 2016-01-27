@@ -1,5 +1,7 @@
 package message;
 
+import org.json.simple.JSONObject;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 
@@ -16,4 +18,24 @@ public class InviteResponseMessage extends Message implements Serializable {
         this.isAccept = isAccept;
         this.pubKey = pubKey;
     }
+
+    public InviteResponseMessage(JSONObject json) {
+        super((String)json.get("author"), (String) json.get("cliqueName"));
+        this.isAccept = (boolean)json.get("isAccept");
+        this.pubKey = new BigInteger((String) json.get("publicKey"));
+    }
+
+
+    @Override
+    public String toJSON() {
+        JSONObject obj = super.startJSON();
+
+        obj.put("msg_type", this.getClass().getSimpleName());
+        obj.put("isAccept", isAccept);
+        obj.put("publicKey", pubKey.toString());
+
+        return obj.toJSONString();
+
+    }
+
 }
