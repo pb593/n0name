@@ -9,6 +9,7 @@
  */
 
 import message.Message;
+import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -39,8 +40,9 @@ class Communicator extends Thread {
         while(!ERROR){
             try {
                 Socket s = srvskt.accept();
-                ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-                Message msg = (Message) ois.readObject();
+                BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                String jsonLine = br.readLine();
+                Message msg = Message.fromJSON(jsonLine);
                 // spawn off a new thread to do a callback and handle the message
                 Thread handle = new Thread() {
                     @Override
@@ -54,9 +56,8 @@ class Communicator extends Thread {
                 Main.logger.severe(String.format("Communicator with id = %d has broken down upon accepting a connection",
                                                                                                             this.id));
                 ERROR = true;
-            } catch (ClassNotFoundException e) {
-                Main.logger.warning(String.format("New message of unknown type received by Communicator with id=%d\n",
-                                                                                                            this.id));
+            } catch (ParseException e) {
+                Main.logger.severe("Could not parse one of the incoming messages");
             }
         }
     }
@@ -64,8 +65,9 @@ class Communicator extends Thread {
     public synchronized boolean send(InetSocketAddress dest, Message msg){
         try {
             Socket skt = new Socket(dest.getAddress(), dest.getPort());
-            ObjectOutputStream oos = new ObjectOutputStream(skt.getOutputStream());
-            oos.writeObject(msg);
+            PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
+            String toSend = msg.toJSON();
+            writer.println(toSend); // send the JSON representation of message
             return true;
         } catch (IOException e) {
             Main.logger.warning(String.format("Error sending message to address %s:%d\n",

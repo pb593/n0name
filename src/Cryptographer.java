@@ -95,16 +95,6 @@ public class Cryptographer {
 
         return encrypted;
 
-        /*
-        // fictitious encrypt for debugging purposes
-        byte[] codons = {0x55,(byte)0xFF};
-        byte[] rst = new byte[plain.length];
-        for(int i = 0; i < plain.length; i++) {
-            rst[i] = (byte) (plain[i] ^ codons[i % 2]);
-        }
-
-        return rst;
-        */
     }
 
     public byte[] decrypt(byte[] ciphertext) {
@@ -119,17 +109,7 @@ public class Cryptographer {
 
 
         return decrypted;
-
-        /*
-        // fictitious decrypt, for debugging
-        byte[] codons = {0x55, (byte)0xFF};
-        byte[] rst = new byte[cipher.length];
-        for(int i = 0; i < cipher.length; i++) {
-            rst[i] = (byte)(cipher[i] ^ codons[i % 2]);
-        }
-
-        return rst;
-        */
+        
     }
 
 

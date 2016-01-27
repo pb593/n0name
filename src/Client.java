@@ -52,7 +52,7 @@ public class Client implements Runnable {
         *  Function: demultiplex message into the right clique. */
 
         String cliqueName = msg.cliqueName;
-        System.out.println(msg.toJSON());
+        // System.out.println(msg.toJSON());
         if(cliques.containsKey(cliqueName)) { // if clique is already known to me
             Clique c = cliques.get(cliqueName);
             c.messageReceived(msg); // give callback to the specific clique
