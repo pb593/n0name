@@ -1,4 +1,5 @@
 import threading, time
+from IPy import IP
 
 from flask import Flask
 app = Flask(__name__)
@@ -25,6 +26,11 @@ def checkin(userID, addr, port): # request to check in
     userID = str(userID)
     addr = str(addr)
     ts = time.time()
+
+    # 0.0.0.0:0 is an indicator for clients to use store-n-forward instead of P2P
+    if(IP(addr).iptype() is "PRIVATE"): # if the ip address in private (perhaps user behind NAT)
+        addr = "0.0.0.0"
+        port = 0
     
     book[userID] = (addr + ":" + str(port), ts) # put into book
     
@@ -69,6 +75,6 @@ def page_not_found(e):
     
     return 'Sorry, nothing at this URL.', 404
 
-# only for debugging, delete in deployment    
-#if __name__ == "__main__":
-#    app.run()
+#only for debugging, delete in deployment    
+if __name__ == "__main__":
+    app.run()
