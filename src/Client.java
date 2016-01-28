@@ -4,7 +4,6 @@
 
 import com.sun.deploy.util.StringUtils;
 import message.InviteMessage;
-import message.InviteResponseMessage;
 import message.Message;
 import message.TextMessage;
 

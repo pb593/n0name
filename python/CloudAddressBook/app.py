@@ -1,10 +1,11 @@
 import threading, time
 from IPy import IP
 
-from flask import Flask
+from flask import Flask, request
 app = Flask(__name__)
 
-# configure the logger
+
+######### address book functionality
 
 book = dict() # dictionary: userID -> ("ipaddr:port", last_checkin_time)
 
@@ -48,7 +49,7 @@ def lookup(userID): # lookup the address of a user
     return rst
     
 @app.route("/display")
-def display(): # for debugging purposes
+def display():
     
     validator() # validate all records
     
@@ -58,11 +59,55 @@ def display(): # for debugging purposes
         rst += "%s %s <br>" % (userID.ljust(25), addr.ljust(25))
     
     return rst
-    
+  
 
+######### store-n-forward (saf) functionality
+
+
+messages = dict() # dictionary: userID -> list{message} 
+
+@app.route("/saf/view/<userID>")
+def saf_view(userID): # for debugging purposes, just shows what's in the postbox
+
+    userID = str(userID)
+    if (userID in messages) and (messages[userID]):
+        return "<br>".join(messages[userID])
+    else:
+        return "This store-n-forward postbox is empty/non-existent"
+
+
+@app.route("/saf/retrieve/<userID>")
+def saf_retrieve(userID): # check the postbox to see if there are any new messages
+                    # HAS SIDE EFFECT: deletes messages after returning them
+    
+    userID = str(userID)
+    if userID in messages:
+        rst = "\n".join(messages[userID])
+        del messages[userID]
+        return rst
+    else:
+        return "None"
+
+@app.route("/saf/store/<userID>", methods = ['POST'])
+def saf_store(userID): # used for sending messages to the user using the store-n-forward service
+
+    userID = str(userID)
+    msg = str(request.form["msg"])
+
+    if userID not in messages: # if postbox does not exist
+        messages[userID] = list() # create new list
+
+    messages[userID].append(msg) # append message into the postbox
+
+    return "ACK"
+
+
+
+
+######### Other functions
 
 @app.route("/")
-def main():
+def welcome():
     
     validator() # validate all records
     
