@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt, a4paper]{article}
 \usepackage{graphicx}
 \begin{document}
 \begin{titlepage}
@@ -8,7 +8,7 @@
 	{\scshape\LARGE University of Cambridge\par}
 	\vspace{1cm}
 	{\scshape\Large Part II Project Progress Report\par}
-	\vspace{1.5cm}
+	\vspace{2cm}
 	{\huge\bfseries Conversation Security using KleeQ \par}
 	\vspace{2cm}
 	{\Large\itshape Pavel Berkovich\par 
@@ -34,5 +34,82 @@
 	{\large January 29, 2016 \par}
 \end{titlepage}
 
+
+% start of the actual document
+\section{Introduction}
+The aim of this project is to implement a domain-specific conversation security protocol called KleeQ \cite{kleeq} and evaluate its applicability to general-purpose messaging. This report gives a summary of the current state of the project, as of January 29, 2016. It contains a detailed account of what has been achieved so far and what is still to be done, describes the major difficulties that have been discovered as well as an updated work plan.
+
+\section{Current Progress}
+This section describes the achievement to date, as well as names the tasks that still need to be carried out.
+\subsection{Achievements}
+\paragraph{Architecture}
+The architectural aspects of the project have now largely been dealt with. Major design decisions include asynchronous communication using callbacks, an elaborate inheritance hierarchy of classes to model different message types and keep-alive messages to ensure the freshness of adressing information. Moreover, an additional effort has been made to keep the code as modular and transparent as possible, to allow code re-use and easy modification.
+
+\paragraph{Components of the Protocol}
+As of now, the part of the protocol related to group establishment has been implemented -- a common secret is derived every time a new user is added and used for encrypting all communications in the group.
+
+
+\paragraph{Interface} A simplistic but fairly functional command-line interface has been developed. It is now possible to create conversations, add other users to them and exchange messages.
+
+\paragraph{Secondary Components} For the purposes of testing the protocol, some Web-based "scaffolding" components have been created. These include a central contact discovery service ("address book") and a store-and-forward service (more on this below).
+
+\subsection{To-Do's}
+
+\paragraph{Authentication}
+At present none of the messages passed around in the system are signed, which leads to possibility of MITM-attacks.
+
+\paragraph{Patching Algorithm}
+The original paper on the KleeQ protocol \cite{kleeq} provides a special algorithm for exchanging the messages, whereby group members explicity update each other on the messages that they do not currently have (the "patching" algorithm). At the moment, the program is relying on simple pseudo-multicast.
+
+\paragraph{Transcript Verification}
+The paper \cite{kleeq} also describes a distributed procedure for verifying the content of the global transcript once one has been converged upon, which is done using so-called causal blocks. At the moment no integrity checks are made.
+
+\paragraph{Improved Key Management}
+The paper \cite{kleeq} also provides a key rotation scheme whereby the common secret in the group is being independently recomputed by each member once a block of messages has been verified and deleted ("sealed off").
+
+
+\section{Timing}
+This section describes how the present state of the project relates to the initially proposed timeline, what challenges have been encountered and gives an adjusted version of the work schedule.
+\subsection{Challenges Encountered}
+Some unanticipated difficulties have arisen in the process of implementation that needed to be tackled separately, which resulted in some amount of delay. In particular:
+\begin{description}
+    \item[Private IP addresses] \hfill \\
+        The problem of some hosts residing in private networks and therefore not being globally addressable (e.g. being behind NATs) was not initially taken into account. Some amount of time was spent on studying NAT traversal techniques (e.g. STUN) and their Java implementations, but eventually a simpler central store-and-forward solution was chosen, to ensure the timely completion of the development process.
+    \item[Protocol gaps] \hfill \\
+        Initially, the assumption was that the research paper on KleeQ \cite{kleeq} describes the protocol in full detail. On closer inspection, it turned out that it only provides some of the necessary mechanisms. As a result, some parts of the protocol had to be designed independently (e.g. the procedure for adding a new user to a group), which took extra time.
+    \item[Phase-order problem] \hfill \\
+        According to the initial plan, the core protocol was to be implemented \emph{before} the "scaffolding" that would allow to test it. Whilst being an obvious miscalculation now, this made the initial stage of process unnecessarily challenging and time-consuming.
+\end{description}
+
+
+\subsection{Updated Schedule}
+In spite off the aforementioned complications, the project is progressing at a good pace, and it seems almost certian that the core part will be completed in time. It is likely, however, that at least some of the optional tasks will not be carried out within the given timeframe. An updated timeline for the core parts of the project is given below:
+
+\vspace{0.5cm}
+
+\begin{tabular*}{0.9\textwidth}{c | l}
+    Date & Milestone \\ 
+    \hline
+    07-02-2016 & All communications are authenticated \\
+    14-02-2016 & Patching Algorithm implemented \\
+    21-02-2016 & Transcript integrity verification done \\ 
+    28-02-2016 & Key rotation implemented \\
+    06-03-2016 & Clean up and bundle into a usable library\\
+    21-04-2016 & Dissertation written up \\
+\end{tabular*}
+
+
+\section{Conclusion}
+Despite certain miscalculations in the planning stage, the project seems to be on track for timely completion. An operational prototype has already been created, and what is left is to iteratively introduce the security properties of KleeQ.
+
+\begin{thebibliography}{9}
+    
+\bibitem{kleeq}
+  J. Readon et al,
+  \emph{KleeQ: Asynchronous Key Management for Dynamic Ad-Hoc Networks},
+  University of Waterloo, Maplesoft,
+  2007.
+
+\end{thebibliography}
 
 \end{document}
