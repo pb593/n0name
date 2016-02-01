@@ -12,6 +12,7 @@
 
 \documentclass{beamer}
 
+\setbeamercovered{transparent}
 % There are many different themes available for Beamer. A comprehensive
 % list with examples is given here:
 % http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
@@ -55,15 +56,14 @@
 % - Use the \inst{?} command only if the authors have different
 %   affiliation.
 
-\institute{University of Cambridge \\ \vspace{1cm} \Small{Supervised by Dr.~Richard Clayton}} % (optional, but mostly needed)
-%{
-%  \inst{1}%
-%  Department of Computer Science\\
-%  University of Somewhere
-%  \and
-%  \inst{2}%
-%  Department of Theoretical Philosophy\\
-%  University of Elsewhere}
+\institute[University of Cambridge] % (optional, but mostly needed)
+{
+  \inst{}%
+  University of Cambridge \\ 
+  \vspace{1cm}
+  \inst{}%
+  \Small{Supervised by Dr.~Richard Clayton}
+}
 % - Use the \inst command only if there are several affiliations.
 % - Keep it simple, no one is interested in your street address.
 
@@ -72,7 +72,7 @@
 % - Not really informative to the audience, more for people (including
 %   yourself) who are reading the slides online
 
-\subject{Theoretical Computer Science}
+%\subject{Theoretical Computer Science}
 % This is only inserted into the PDF information catalog. Can be left
 % out. 
 
@@ -80,8 +80,8 @@
 % is a graphic format that can be processed by latex or pdflatex,
 % resp., then you can add a logo as follows:
 
-% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
-% \logo{\pgfuseimage{university-logo}}
+\pgfdeclareimage[height=0.5cm]{university-logo}{logo.png}
+\logo{\pgfuseimage{university-logo}}
 
 % Delete this, if you do not want the table of contents to pop up at
 % the beginning of each subsection:
@@ -106,122 +106,136 @@
 
 % Section and subsections will appear in the presentation overview
 % and table of contents.
-\section{First Main Section}
-
-\subsection{First Subsection}
-
-\begin{frame}{First Slide Title}{Optional Subtitle}
-  \begin{itemize}
-  \item {
-    My first point.
-  }
-  \item {
-    My second point.
-  }
-  \end{itemize}
+\section{Intro to secure communication}
+\begin{frame}{Problems of secure communication}
+    \begin{block}{Problem 1: Contact Discovery}<1-4>
+        How do we know where to send our messages?
+    \end{block}
+    \pause
+    \begin{block}{Problem 2: Trust Establishment}<2-4>
+        How do we know our peers are who they say they are?
+    \end{block}
+    \pause
+    \begin{block}{Problem 3: Conversation Security}<3-4, 5>
+        How do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
+    \end{block}
+    \pause
+    \begin{block}{Problem 4: Transport Privacy}<4>
+        What is the mechanics for actually sending the message so as to hide the message metadata (sender, recepient, time, size etc)?
+    \end{block}
 \end{frame}
 
-\subsection{Second Subsection}
-
-% You can reveal the parts of a slide one at a time
-% with the \pause command:
-\begin{frame}{Second Slide Title}
-  \begin{itemize}
-  \item {
-    First item.
-    \pause % The slide will pause after showing the first item
-  }
-  \item {   
-    Second item.
-  }
-  % You can also specify when the content should appear
-  % by using <n->:
-  \item<3-> {
-    Third item.
-  }
-  \item<4-> {
-    Fourth item.
-  }
-  % or you can use the \uncover command to reveal general
-  % content (not just \items):
-  \item<5-> {
-    Fifth item. \uncover<6->{Extra text in the fifth item.}
-  }
-  \end{itemize}
-\end{frame}
-
-\section{Second Main Section}
-
-\subsection{Another Subsection}
-
-\begin{frame}{Blocks}
-\begin{block}{Block Title}
-You can also highlight sections of your presentation in a block, with it's own title
-\end{block}
-\begin{theorem}
-There are separate environments for theorems, examples, definitions and proofs.
-\end{theorem}
-\begin{example}
-Here is an example of an example block.
-\end{example}
-\end{frame}
-
-% Placing a * after \section means it will not show in the
-% outline or table of contents.
-\section*{Summary}
-
-\begin{frame}{Summary}
-  \begin{itemize}
-  \item
-    The \alert{first main message} of your talk in one or two lines.
-  \item
-    The \alert{second main message} of your talk in one or two lines.
-  \item
-    Perhaps a \alert{third message}, but not more than that.
-  \end{itemize}
-  
-  \begin{itemize}
-  \item
-    Outlook
+\begin{frame}{\textit{KleeQ (Readon et al, 2006)}}
     \begin{itemize}
-    \item
-      Something you haven't solved.
-    \item
-      Something else you haven't solved.
+        \item conversation security protocol for \textit{ad-hoc} group communication
+        \item security properties:
+            \begin{itemize}
+                \item confidentiality of message content
+                \item message integrity
+                \item forward and backward secrecy
+                \item message authorship repudiation
+                \item conversation participation repudiation
+                \item anonymity preserving
+            \end{itemize}
+        \item very hacky and unstable implementation in Python
     \end{itemize}
-  \end{itemize}
+\end{frame}
+
+\section{Aim of the project}
+\begin{frame}{Goals of the project}
+    \begin{block}{Goal 1: Implementation}
+        Implement the protocol in Java. Optionally, pack it up into a library so that others could use it.
+    \end{block}
+    \begin{block}{Goal 2: Messenger Prototype}
+        Build a simple prototype of a messenger to show that the protocol works.
+    \end{block}
+\end{frame}
+
+\section{Accomplishments}
+\begin{frame}{Accomplishments}
+    \begin{block}{Architecture}
+            \begin{itemize}
+                \item Asynchronous communicaiton with callbacks
+                \item Inheritance hierarchy of message types
+            \end{itemize}
+    \end{block}
+    \begin{block}{Some protocol components}
+        \begin{itemize}
+            \item Group establishment
+            \item Derivation of common secret + encryption/decryption
+        \end{itemize}
+    \end{block}
+    \begin{block}{Interface}
+        A simple CLI interface, for testing.
+    \end{block}
+    \begin{block}{Secondary Components}
+        \begin{itemize}
+            \item Online contact discovery ("address book")
+            \item Store-n-forward service
+        \end{itemize}
+    \end{block}
 \end{frame}
 
 
+\section{To-Do's}
+\begin{frame}{To-Do's}
+    \begin{block}{Patching Algorithm}
+        An somewhat unusual algorithm for message exchange suggested by paper.
+        Currently done by pseudo-multicast.
+    \end{block}
+    \begin{block}{Transcript Verification}
+        Procedure for verifying the global transcript, specified in the paper.
+        No integrity check at the moment.
+    \end{block}
+    \begin{block}{Improved key mangement}
+        Independent recomputation of common secret based on the results of transcript
+        verification. Gives forward/backward secrecy.
+    \end{block}
 
-% All of the following is optional and typically not needed. 
-\appendix
-\section<presentation>*{\appendixname}
-\subsection<presentation>*{For Further Reading}
 
-\begin{frame}[allowframebreaks]
-  \frametitle<presentation>{For Further Reading}
-    
-  \begin{thebibliography}{10}
-    
-  \beamertemplatebookbibitems
-  % Start with overview books.
+\end{frame}
 
-  \bibitem{Author1990}
-    A.~Author.
-    \newblock {\em Handbook of Everything}.
-    \newblock Some Press, 1990.
- 
-    
-  \beamertemplatearticlebibitems
-  % Followed by interesting articles. Keep the list short. 
+\section{Challenges Encountered}
+\begin{frame}{Challenges Encountered}
+    \pause
+    \begin{block}{Challenge 1: Protocol gaps}
+        The original paper omits \textit{a lot} of detail. Have to re-design some
+        parts independently. 
+    \end{block}
+    \pause
+    \begin{block}{Challenge 2: Phase order problem}
+        To test a conversation security protocol, have to write a lot of "scaffolding" first. This needs to be done \textit{before}, not after writing the protocol.
+    \end{block}
+    \pause
+    \begin{block}{Challenge 3: Private IP addresses}
+        P2P is made complicated by most hosts not having public IP addresses.
+        Had to write a simple store-and-forward service.
+    \end{block}
+\end{frame}
 
-  \bibitem{Someone2000}
-    S.~Someone.
-    \newblock On this and that.
-    \newblock {\em Journal of This and That}, 2(1):50--100,
-    2000.
-  \end{thebibliography}
+
+\section{Timing}
+\begin{frame}{Timing}
+    \begin{tabular*}{0.9\textwidth}{c | l}
+        Date & Milestone \\ 
+        \hline
+        07-02-2016 & All communications are authenticated \\
+        14-02-2016 & Patching Algorithm implemented \\
+        21-02-2016 & Transcript integrity verification done \\ 
+        28-02-2016 & Key rotation implemented \\
+        06-03-2016 & Clean up and bundle into a usable library\\
+        21-04-2016 & Dissertation written up \\
+    \end{tabular*}
+\end{frame}
+
+\section{Q\&A}
+\begin{frame}{Q\&A}
+    \Large{Do you have any questions?}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Large{Thank you!}
 \end{frame}
 
 \end{document}
