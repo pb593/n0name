@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -7,16 +8,22 @@ public class StoreAndForward {
 
     private static final String servUrl = "http://pberkovich1994.pythonanywhere.com/saf/";
 
-    public static void send(String userID, String msg) {
+    public static synchronized boolean send(String userID, String msg) {
+
+        String response = HTTPHandler.httpPostRequest(servUrl + "store/" + userID, msg);
+
+        return response.equals("ACK"); // return true if ACKED
 
     }
 
-    public static List<String> retrieve(String userID) {
+    public static synchronized List<String> retrieve(String userID) {
 
         String urlToRead = servUrl + "retrieve/" + userID;
-
-
-
+        String response = HTTPHandler.httpGetRequest(urlToRead);
+        if(response.startsWith("None"))
+            return null;
+        else
+            return Arrays.asList(response.split("\n"));
 
     }
 

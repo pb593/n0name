@@ -47,7 +47,7 @@ public class Clique {
             }
         }
 
-        comm.send(AddressBook.lookup(invmsg.author),
+        comm.send(invmsg.author,
                 new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name));
                                                             // reply, accepting the invitation and sending my pubkey
 
@@ -57,12 +57,10 @@ public class Clique {
     public void addMember(String userID) {
 
         if(AddressBook.contains(userID)) {
-            // get address of the destination
-            InetSocketAddress dest = AddressBook.lookup(userID);
 
             // send the invite
             synchronized (members) {
-                comm.send(dest, new InviteMessage(members.keySet(), crypto.getPublicKey(),
+                comm.send(userID, new InviteMessage(members.keySet(), crypto.getPublicKey(),
                                                                         client.getUserID(), this.name));
             }
 
@@ -102,14 +100,7 @@ public class Clique {
 
         synchronized (members) {
             for (String userID : members.keySet()) {
-                if (AddressBook.contains(userID)) {
-                    InetSocketAddress dest = AddressBook.lookup(userID);
-
-                    // send via communicator
-                    comm.send(dest, msg);
-                } else {
-                    System.err.printf("Cannot send message to user %s. They are not in the address book.\n", userID);
-                }
+                comm.send(userID, msg);
             }
         }
     }
@@ -142,10 +133,10 @@ public class Clique {
                     for(String peer: members.keySet()) {
 
                         if(!peer.equals(this.client.getUserID())) {
-                            InetSocketAddress peerAddr = AddressBook.lookup(peer); // get address of peer
 
-                            comm.send(peerAddr, new UserAddedNotificationMessage(newUserID, newUserPubKey,
+                            comm.send(peer, new UserAddedNotificationMessage(newUserID, newUserPubKey,
                                     client.getUserID(), this.name));
+
                         }
 
                     }

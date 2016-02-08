@@ -1,7 +1,6 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 
 /**
@@ -10,41 +9,16 @@ import java.util.HashMap;
 
 public class AddressBook {
 
+
     private static final String servUrl = "http://pberkovich1994.pythonanywhere.com";
-
-    private static String httpGetRequest(String urlToRead) {
-
-        String result = null;
-        try {
+    private static final Integer REFRESH_RATE = 5; // refresh rate for the book (in seconds)
 
 
-            StringBuilder sb = new StringBuilder();
+    private static HashMap<String, InetSocketAddress> book = pull();
+    private static long timeLastUpdate = System.currentTimeMillis();
 
 
-            URL url = new URL(urlToRead);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String line;
-            while ((line = rd.readLine()) != null) {
-                sb.append(line + "\n");
-            }
-            rd.close();
-
-            result = sb.toString().trim(); // response by the server
-
-
-        }
-        catch (IOException e) {
-            Main.logger.severe("Unable to do a HTTP GET request to the address server...");
-            System.exit(-1);
-        }
-
-        return result;
-
-    }
-
-    public static void checkin(String userID, Integer port) {
+    synchronized public static void checkin(String userID, Integer port) {
 
         String myAddress = null; // get my IP address
         try {
@@ -55,14 +29,19 @@ public class AddressBook {
             return;
         }
         String urlToRead = servUrl + "/check-in/" + userID + "/" + myAddress + "/" + port.toString();
-        httpGetRequest(urlToRead); // send a GET request to this URL
+        HTTPHandler.httpGetRequest(urlToRead); // send a GET request to this URL
+
+        // now book has definitely changed, force an update
+        book = pull();
 
     }
 
-    public static InetSocketAddress lookup(String userID) {
+    synchronized public static InetSocketAddress lookup(String userID) {
+
+        book = getAll(); // update if necessary
 
         String urlToRead = servUrl + "/lookup/" + userID;
-        String response = httpGetRequest(urlToRead);
+        String response = HTTPHandler.httpGetRequest(urlToRead);
 
         if(response.equals("None")) // userID not present in the book
             return null;
@@ -74,17 +53,32 @@ public class AddressBook {
 
     }
 
-    public static boolean contains(String userID) {
+    synchronized public static boolean contains(String userID) {
+
+        book = getAll(); // update book if necessary
+
         InetSocketAddress addr = lookup(userID);
         return (addr != null);
     }
 
-    public static HashMap<String, InetSocketAddress> getAll() {
+    synchronized public static HashMap<String, InetSocketAddress> getAll() {
+
+        long now = System.currentTimeMillis();
+        if(now - timeLastUpdate > REFRESH_RATE * 1000) { // book older than 5 seconds
+            book = pull(); // update the book
+            timeLastUpdate = now; // update the timestamp
+        }
+
+        return book;
+
+    }
+
+    private static HashMap<String, InetSocketAddress> pull() {
 
         HashMap<String, InetSocketAddress> table = new HashMap<>();
 
         String urlToRead = servUrl + "/display";
-        String response = httpGetRequest(urlToRead);
+        String response = HTTPHandler.httpGetRequest(urlToRead);
 
         if(!response.equals("")) { // if the table is not empty
             String[] lines = response.split("<br>");

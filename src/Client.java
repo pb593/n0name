@@ -116,7 +116,7 @@ public class Client implements Runnable {
                 }
             }
             else { // if there are no active cliques
-                System.out.println("You` are not part of any group at the moment.");
+                System.out.println("You are not part of any group at the moment.");
             }
             System.out.printf("> "); // invitation to type in a command
             String str = scanner.nextLine();

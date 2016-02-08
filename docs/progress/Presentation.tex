@@ -106,28 +106,25 @@
 
 % Section and subsections will appear in the presentation overview
 % and table of contents.
-\section{Intro to secure communication}
-\begin{frame}{Problems of secure communication}
-    \begin{block}{Problem 1: Contact Discovery}<1-4>
+\section{Project and its goals}
+\begin{frame}{Problems of P2P secure communication}
+    \begin{block}{Problem 1: Contact Discovery}<1>
         How do we know where to send our messages?
     \end{block}
-    \pause
-    \begin{block}{Problem 2: Trust Establishment}<2-4>
+    \begin{block}{Problem 2: Trust Establishment}<1>
         How do we know our peers are who they say they are?
     \end{block}
-    \pause
-    \begin{block}{Problem 3: Conversation Security}<3-4, 5>
+    \begin{block}{Problem 3: Conversation Security}<1-2>
         How do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
     \end{block}
-    \pause
-    \begin{block}{Problem 4: Transport Privacy}<4>
+    \begin{block}{Problem 4: Transport Privacy}<1>
         What is the mechanics for actually sending the message so as to hide the message metadata (sender, recepient, time, size etc)?
     \end{block}
 \end{frame}
 
 \begin{frame}{\textit{KleeQ (Readon et al, 2006)}}
     \begin{itemize}
-        \item conversation security protocol for \textit{ad-hoc} group communication
+        \item conversation security protocol for P2P \textit{ad-hoc} group communication
         \item security properties:
             \begin{itemize}
                 \item confidentiality of message content
@@ -141,10 +138,9 @@
     \end{itemize}
 \end{frame}
 
-\section{Aim of the project}
-\begin{frame}{Goals of the project}
+\begin{frame}{Goals of the project}{Brief reminder}
     \begin{block}{Goal 1: Implementation}
-        Implement the protocol in Java. Optionally, pack it up into a library so that others could use it.
+        Implement the protocol in Java. See how it performs, test scalability limits.
     \end{block}
     \begin{block}{Goal 2: Messenger Prototype}
         Build a simple prototype of a messenger to show that the protocol works.
@@ -214,12 +210,11 @@
 \end{frame}
 
 
-\section{Timing}
+\section{Planning \& Timing}
 \begin{frame}{Timing}
     \begin{tabular*}{0.9\textwidth}{c | l}
         Date & Milestone \\ 
         \hline
-        07-02-2016 & All communications are authenticated \\
         14-02-2016 & Patching Algorithm implemented \\
         21-02-2016 & Transcript integrity verification done \\ 
         28-02-2016 & Key rotation implemented \\
