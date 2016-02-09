@@ -4,7 +4,6 @@
 
 import com.sun.deploy.util.StringUtils;
 import message.InviteMessage;
-import message.InviteResponseMessage;
 import message.Message;
 import message.TextMessage;
 import org.json.simple.parser.ParseException;
@@ -60,7 +59,8 @@ public class Client implements Runnable {
             try {
                 msg = Message.fromJSON(datagramStr); // recover the message object
             } catch (ParseException e) {
-                e.printStackTrace();
+                System.err.printf("Unable to parse and incoming message. Dropping it.");
+                return; // just ignore the message
             }
             if(msg instanceof InviteMessage) { // if somebody added me to this clique
                 Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
@@ -285,6 +285,25 @@ public class Client implements Runnable {
                 clique.sendMessage(newmsg); //send message to clique using Communicator
                 System.out.println("Message sent.");
                 pressAnyKeyToContinue();
+            }
+            else if(str.startsWith("add")) { // add new user to currently viewed group
+                String[] tokens = str.split("\\s+"); //split command on whitespace
+                if(tokens.length >= 2) {
+                    String userID = tokens[1];
+                    if(cliques.containsKey(clique.getName()) && AddressBook.contains(userID)){
+                        Clique c = cliques.get(clique.getName()); // get clique with this name
+                        c.addMember(userID); // add user to group
+                        System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getName());
+                    }
+                    else {
+                        System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
+                                                                                            clique.getName(), userID);
+                    }
+                }
+                else {
+                    System.out.println("FORMAT: add <userID>");
+                    pressAnyKeyToContinue();
+                }
             }
             else {
                 System.out.println("Malformed command. Try again...");
