@@ -47,9 +47,10 @@ public class Clique {
             }
         }
 
-        comm.send(invmsg.author,
-                new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name));
-                                                            // reply, accepting the invitation and sending my pubkey
+        Message invRespMsg = new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name);
+        String toTransmit = "NoNaMe" + invRespMsg.toJSON();
+
+        comm.send(invmsg.author, toTransmit); // reply, accepting the invitation and sending my pubkey
 
         crypto.acceptPublicKey(invmsg.pubKey); // update the common secret
     }
@@ -58,12 +59,16 @@ public class Clique {
 
         if(AddressBook.contains(userID)) {
 
-            // send the invite
+            Message invMsg = null;
             synchronized (members) {
-                comm.send(userID, new InviteMessage(members.keySet(), crypto.getPublicKey(),
-                                                                        client.getUserID(), this.name));
+                invMsg = new InviteMessage(members.keySet(), crypto.getPublicKey(),
+                        client.getUserID(), this.name);
+
             }
 
+            String toTransmit = "NoNaMe" + invMsg.toJSON();
+            // send the invite
+            comm.send(userID, toTransmit);
             // mark invite as pending response
             pendingInvites.add(userID);
         }
@@ -100,12 +105,29 @@ public class Clique {
 
         synchronized (members) {
             for (String userID : members.keySet()) {
-                comm.send(userID, msg);
+                String toTransmit = prepareMsgForTransmission(msg);
+                comm.send(userID, toTransmit);
             }
         }
     }
 
+    public void datagramReceived(String datagram) {
+        String mac = datagram.substring(0, 43);
+        String encMsg = datagram.substring(43);
+
+        // verify the MAC
+        if(!mac.equals(crypto.Mac(this.name + encMsg))) { // if MACs do not match
+            System.err.println("Received message failed to pass integrity check");
+            return;
+        }
+
+        Message msg = crypto.decryptMsg(encMsg);
+
+        messageReceived(msg);
+    }
+
     public void messageReceived(Message msg) {
+
         /* Callback received from Client class */
         if(msg instanceof UserAddedNotificationMessage) { // notification about a new added member
             String newUserID = ((UserAddedNotificationMessage) msg).userID;
@@ -117,6 +139,7 @@ public class Clique {
 
             // update the common secret with new user's pubkey
             crypto.acceptPublicKey(newUserPubKey);
+            client.updateAddressTag(this.name, crypto.Mac(this.name)); // ask client to update address tag
         }
         else if(msg instanceof InviteResponseMessage) { // response to an InviteMessage sent by me earlier
             boolean isValid = pendingInvites.contains(msg.author); // check if I actually invited this person
@@ -133,9 +156,10 @@ public class Clique {
                     for(String peer: members.keySet()) {
 
                         if(!peer.equals(this.client.getUserID())) {
-
-                            comm.send(peer, new UserAddedNotificationMessage(newUserID, newUserPubKey,
-                                    client.getUserID(), this.name));
+                            String toTransmit =
+                                    prepareMsgForTransmission(new UserAddedNotificationMessage(newUserID,
+                                                                        newUserPubKey, client.getUserID(), this.name));
+                            comm.send(peer, toTransmit);
 
                         }
 
@@ -146,6 +170,7 @@ public class Clique {
 
                 // update the common secret with new user's pubkey
                 crypto.acceptPublicKey(newUserPubKey);
+                client.updateAddressTag(this.name, crypto.Mac(this.name)); // ask client to update address tag
 
             }
         }
@@ -154,6 +179,23 @@ public class Clique {
                 messageHistory.add((TextMessage) msg);
             }
         }
+    }
+
+    private String prepareMsgForTransmission(Message msg) {
+
+        String cliqueTag = crypto.Mac(this.name); // MAC(K, cliqueName)
+        String encString = crypto.encryptMsg(msg); // ENC(K, msg)
+        String mac = crypto.Mac(this.name + encString); // MAC(K, cliqueName || ENC(K, msg))
+
+        // MSG_LAYOUT: MAC(K, cliqueName) || MAC(K, cliqueName || ENC(K, msg)) || ENC(K, msg)
+
+        return cliqueTag + mac + encString;
+
+    }
+
+    public String getCurrentAddressTag() {
+        String cliqueTag = crypto.Mac(this.name);
+        return cliqueTag;
     }
 
 

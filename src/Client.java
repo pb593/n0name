@@ -4,8 +4,10 @@
 
 import com.sun.deploy.util.StringUtils;
 import message.InviteMessage;
+import message.InviteResponseMessage;
 import message.Message;
 import message.TextMessage;
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -20,6 +22,8 @@ public class Client implements Runnable {
     private final String userID;
     private final Communicator comm;
     private final ConcurrentHashMap<String, Clique> cliques = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> addressTags = new ConcurrentHashMap<>();
+                                                            // for fast lookup addressTag -> cliqueName
 
     public Client(String userID) {
 
@@ -46,24 +50,47 @@ public class Client implements Runnable {
     }
 
 
-    public void msgReceived(Message msg) {
+    public void msgReceived(String datagramStr) {
         /* Callback received in a dedicated thread from Communicator.
         *  Function: demultiplex message into the right clique. */
 
-        String cliqueName = msg.cliqueName;
-        // System.out.println(msg.toJSON());
-        if(cliques.containsKey(cliqueName)) { // if clique is already known to me
-            Clique c = cliques.get(cliqueName);
-            c.messageReceived(msg); // give callback to the specific clique
+        if(datagramStr.startsWith("NoNaMe")) { // unencrypted communication, can recover message here
+            datagramStr = datagramStr.replaceFirst("NoNaMe", ""); // remove decryption marker
+            Message msg = null;
+            try {
+                msg = Message.fromJSON(datagramStr); // recover the message object
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            if(msg instanceof InviteMessage) { // if somebody added me to this clique
+                Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
+                cliques.put(msg.cliqueName, c); // put into the clique hashmap
+                addressTags.put(c.getCurrentAddressTag(), msg.cliqueName);
+            }
+            else {
+                cliques.get(msg.cliqueName).messageReceived(msg); // pass the message to clique
+            }
         }
-        else if(msg instanceof InviteMessage) { // if somebody added me to this clique
-            Clique c = new Clique(cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
-            cliques.put(cliqueName, c); // put into the clique hashmap
-        }
-        else { // never see this clique before and isn't an invitation
-            System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
+        else { // encrypted communication
+            String tag = datagramStr.substring(0, 43);
+            String cliqueName = addressTags.get(tag);
+            datagramStr = datagramStr.substring(43); // remove the address tag from message
+            if(cliques.containsKey(cliqueName)) { // if clique is already known to me
+                Clique c = cliques.get(cliqueName);
+                c.datagramReceived(datagramStr); // give callback to the specific clique
+            }
+            else { // never see this clique before and isn't an invitation
+                System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
+            }
         }
 
+    }
+
+    public void updateAddressTag(String cliqueName, String newAddressTag) {
+        /* Callback given by Clique when its address tag changes */
+        synchronized (addressTags) {
+            addressTags.put(newAddressTag, cliqueName);
+        }
     }
 
     @Override
@@ -152,6 +179,7 @@ public class Client implements Runnable {
                     if(!cliques.containsKey(newCliqueName)) { // if name is fresh
                         Clique c = new Clique(newCliqueName, this, comm);
                         cliques.put(newCliqueName, c); // insert new clique
+                        addressTags.put(c.getCurrentAddressTag(), newCliqueName);
                         System.out.printf("A new empty group with name '%s' has been created.\n", newCliqueName);
                     }
                     else {

@@ -2,6 +2,10 @@
  * Created by pb593 on 23/11/2015.
  */
 
+import message.Message;
+import org.apache.commons.codec.binary.Base64;
+import org.json.simple.parser.ParseException;
+
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
@@ -76,14 +80,57 @@ public class Cryptographer {
         secretExp = newSecretExp; // update the secret exponent
 
         byte[] secretExpBytes = secretExp.toByteArray();
-        secretKey = new SecretKeySpec(secretExpBytes, 0, secretExpBytes.length, "AES");
+        secretKey = new SecretKeySpec(secretExpBytes, 0, 32, "AES");
                                                                 // re-instantiate the secret key
 
-        // System.out.printf("New secret exponent: %s\n", secretExp.toString()); //TODO: remove in prod version
+        // System.out.printf("New secret exponent: %d - %s\n", secretExpBytes.length, secretExp.toString());
+                                                                                    //TODO: remove in prod version
 
     }
 
-    public byte[] encrypt(byte[] plaintext) {
+    public String Mac(String input) {
+
+        Mac macObj = null;
+        String macAlgo = "HmacSHA256";
+        try {
+            macObj = Mac.getInstance(macAlgo);
+            macObj.init(secretKey);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.printf("Mac algorithm %s not found\n", macAlgo);
+            e.printStackTrace();
+            System.exit(-1);
+        } catch (InvalidKeyException e) {
+            System.err.println("Attempted to MAC with an invalid key");
+            e.printStackTrace();
+            System.exit(-1);
+        }
+
+        return Base64.encodeBase64URLSafeString(macObj.doFinal(input.getBytes()));
+
+    }
+
+    public String encryptMsg(Message msg) {
+        byte[] bytes = msg.toJSON().getBytes();
+        byte[] bytesEncrypted = encryptBytes(bytes);
+        return Base64.encodeBase64URLSafeString(bytesEncrypted);
+    }
+
+    public Message decryptMsg(String urlSafeString) {
+        byte[] bytesEncrypted = Base64.decodeBase64(urlSafeString);
+        byte[] bytesDecrypted = decryptBytes(bytesEncrypted);
+        String jsonString = new String(bytesDecrypted);
+        Message msg = null;
+        try {
+            msg = Message.fromJSON(jsonString);
+        } catch (ParseException e) {
+            System.err.println("Unable to decrypt message.");
+            e.printStackTrace();
+        }
+
+        return msg; // will return null if an error happens
+    }
+
+    private byte[] encryptBytes(byte[] plaintext) {
 
         byte[] encrypted = null;
         try {
@@ -97,7 +144,7 @@ public class Cryptographer {
 
     }
 
-    public byte[] decrypt(byte[] ciphertext) {
+    private byte[] decryptBytes(byte[] ciphertext) {
 
         byte[] decrypted = null;
         try {

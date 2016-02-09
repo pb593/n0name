@@ -69,19 +69,11 @@ class Communicator extends Thread {
         }
     };
 
-    private void msgReceived(String jsonString) {
-        Message msg = null;
-        try {
-            msg = Message.fromJSON(jsonString);
-        } catch (ParseException e) {
-            Main.logger.severe("Could not parse one of the incoming messages");
-        }
+    private void msgReceived(String datagram) {
 
-        // prepare thread to run
-        final Message finalMsg = msg; // made final to pass into thread
         Thread handle = new Thread() {
             public void run() {
-                client.msgReceived(finalMsg);
+                client.msgReceived(datagram); // pass the string to Client
             }
         };
         handle.setDaemon(true);
@@ -106,7 +98,7 @@ class Communicator extends Thread {
     }
 
 
-    public synchronized boolean send(String userID, Message msg){
+    public synchronized boolean send(String userID, String urlSafeString){
         InetSocketAddress dest = AddressBook.lookup(userID); // get address of the user
         if(dest == null) {// user not in address book
             Main.logger.warning(String.format("Communicator failed to send msg to user %s. User not in address book",
@@ -115,14 +107,13 @@ class Communicator extends Thread {
         }
         try {
             if(dest.toString().equals("/0.0.0.0:0")) { // address is private -> use store-n-forward
-                boolean ret = StoreAndForward.send(userID, msg.toJSON());
+                boolean ret = StoreAndForward.send(userID, urlSafeString);
                 return ret; // return true if ACKed
             }
             else {
                 Socket skt = new Socket(dest.getAddress(), dest.getPort());
                 PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
-                String toSend = msg.toJSON();
-                writer.println(toSend); // send the JSON representation of message
+                writer.println(urlSafeString);
                 return true;
             }
         } catch (IOException e) {
@@ -134,7 +125,7 @@ class Communicator extends Thread {
     }
 
     public Integer getPort() {
-        return port; // reading and immutable value, so no need for syncronization
+        return port; // reading and immutable value, so no need for synchronization
     }
 
 }
