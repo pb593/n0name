@@ -1,7 +1,6 @@
 import message.*;
 
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,7 +18,7 @@ public class Clique {
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
-    private final Cryptographer crypto = new Cryptographer("AES", 256);
+    private final Cryptographer crypto = new Cryptographer();
 
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
@@ -30,6 +29,7 @@ public class Clique {
         synchronized (members) {
             members.put(client.getUserID(), new User(client.getUserID()));
         }
+        client.addAddressTag(getCurrentAddressTag(), this.name);
     }
 
     public Clique(String name, Client client, Communicator comm, InviteMessage invmsg) {
@@ -53,6 +53,7 @@ public class Clique {
         comm.send(invmsg.author, toTransmit); // reply, accepting the invitation and sending my pubkey
 
         crypto.acceptPublicKey(invmsg.pubKey); // update the common secret
+        client.addAddressTag(getCurrentAddressTag(), this.name); // publish the new address tag
     }
 
     public void addMember(String userID) {
@@ -112,8 +113,8 @@ public class Clique {
     }
 
     public void datagramReceived(String datagram) {
-        String mac = datagram.substring(0, 43);
-        String encMsg = datagram.substring(43);
+        String mac = datagram.substring(0, Cryptographer.macB64StringLength);
+        String encMsg = datagram.substring(Cryptographer.macB64StringLength);
 
         // verify the MAC
         if(!mac.equals(crypto.Mac(this.name + encMsg))) { // if MACs do not match
@@ -137,9 +138,13 @@ public class Clique {
                 members.put(newUserID, new User(newUserID)); // insert the new user into members hashmap
             }
 
+            String oldAddressTag = getCurrentAddressTag();
+
             // update the common secret with new user's pubkey
             crypto.acceptPublicKey(newUserPubKey);
-            client.updateAddressTag(this.name, crypto.Mac(this.name)); // ask client to update address tag
+
+            client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
+            client.removeAddressTag(oldAddressTag); // remove the previous address tag
         }
         else if(msg instanceof InviteResponseMessage) { // response to an InviteMessage sent by me earlier
             boolean isValid = pendingInvites.contains(msg.author); // check if I actually invited this person
@@ -168,9 +173,13 @@ public class Clique {
                     members.put(newUserID, new User(newUserID)); // add new user to clique
                 }
 
+                String oldAddressTag = getCurrentAddressTag();
+
                 // update the common secret with new user's pubkey
                 crypto.acceptPublicKey(newUserPubKey);
-                client.updateAddressTag(this.name, crypto.Mac(this.name)); // ask client to update address tag
+                client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
+                client.removeAddressTag(oldAddressTag); // remove the previous address tag
+
 
             }
         }

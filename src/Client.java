@@ -54,7 +54,7 @@ public class Client implements Runnable {
         /* Callback received in a dedicated thread from Communicator.
         *  Function: demultiplex message into the right clique. */
 
-        if(datagramStr.startsWith("NoNaMe")) { // unencrypted communication, can recover message here
+        if(datagramStr.startsWith("NoNaMe")) { // unencrypted communication -> can recover Message here
             datagramStr = datagramStr.replaceFirst("NoNaMe", ""); // remove decryption marker
             Message msg = null;
             try {
@@ -65,31 +65,40 @@ public class Client implements Runnable {
             if(msg instanceof InviteMessage) { // if somebody added me to this clique
                 Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
                 cliques.put(msg.cliqueName, c); // put into the clique hashmap
-                addressTags.put(c.getCurrentAddressTag(), msg.cliqueName);
             }
             else {
                 cliques.get(msg.cliqueName).messageReceived(msg); // pass the message to clique
             }
         }
         else { // encrypted communication
-            String tag = datagramStr.substring(0, 43);
-            String cliqueName = addressTags.get(tag);
-            datagramStr = datagramStr.substring(43); // remove the address tag from message
-            if(cliques.containsKey(cliqueName)) { // if clique is already known to me
-                Clique c = cliques.get(cliqueName);
-                c.datagramReceived(datagramStr); // give callback to the specific clique
+            String tag = datagramStr.substring(0, Cryptographer.macB64StringLength);
+            if(addressTags.containsKey(tag)) {
+                String cliqueName = addressTags.get(tag);
+                datagramStr = datagramStr.substring(Cryptographer.macB64StringLength); // remove the address tag from message
+                if (cliques.containsKey(cliqueName)) { // if clique is already known to me
+                    Clique c = cliques.get(cliqueName);
+                    c.datagramReceived(datagramStr); // give callback to the specific clique
+                } else { // never see this clique before and isn't an invitation
+                    System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
+                }
             }
-            else { // never see this clique before and isn't an invitation
-                System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
-            }
+            else
+                System.err.printf("Received a message for unknown clique with address tag: %s\n", tag);
         }
 
     }
 
-    public void updateAddressTag(String cliqueName, String newAddressTag) {
-        /* Callback given by Clique when its address tag changes */
+    public void addAddressTag(String newAddressTag, String cliqueName) {
+        /* Clique publishes its address tag in Client to receive messages destined for it*/
         synchronized (addressTags) {
             addressTags.put(newAddressTag, cliqueName);
+        }
+    }
+
+    public void removeAddressTag(String oldAddressTag) {
+        /* When address tag changes, Clique removes it */
+        synchronized (addressTags) {
+            addressTags.remove(oldAddressTag);
         }
     }
 

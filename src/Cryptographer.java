@@ -16,6 +16,18 @@ import java.security.SecureRandom;
 
 public class Cryptographer {
 
+    /* Static constants */
+
+    public final static Integer encBitLength = 256; // length of key to be used
+
+    public final static String encAlgo = "AES"; // algorithm to be used for encryption
+
+    public final static Integer macByteLength = 32; // length of MACs (in bytes)
+
+    public final static String macAlgo = "HmacSHA256"; // algorithm used for MACs
+
+    public final static Integer macB64StringLength =
+                                    (int) Math.ceil(4.0 * macByteLength / 3.0); // length of Base64-encoded MAC
 
     // generator and modulo parameters (constant and static)
     private static final BigInteger P = new BigInteger("733395913193084876972058238006528755331084354587635497632061" +
@@ -27,13 +39,9 @@ public class Cryptographer {
                                             "57635902833299624300581");
 
 
+    /* Other member variables */
+
     private final SecureRandom random = new SecureRandom();
-
-
-
-    private final Integer bitLength; // length of key to be used
-
-    private final String algorithm; // algorithm to be used for encryption
 
     private final Cipher cipher;
 
@@ -42,19 +50,16 @@ public class Cryptographer {
     SecretKey secretKey; // Java object representing secretExp in encryption / decryption procedures
 
 
-    public Cryptographer(String algorithm, Integer bitLength) {
+    public Cryptographer() {
 
-        this.algorithm = algorithm; // block cipher + modus operandi
-        this.bitLength = bitLength; // number of bits in a key
-
-        secretExp = new BigInteger(bitLength, random); // initially, secret exponent chosen randomly
+        secretExp = new BigInteger(encBitLength, random); // initially, secret exponent chosen randomly
 
         byte[] secretKeyBytes = secretExp.toByteArray();
-        secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, algorithm); // init the private key
+        secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, encAlgo); // init the private key
 
         Cipher ctemp = null;
         try {
-            ctemp = Cipher.getInstance(algorithm);
+            ctemp = Cipher.getInstance(encAlgo);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (NoSuchPaddingException e) {
@@ -80,7 +85,8 @@ public class Cryptographer {
         secretExp = newSecretExp; // update the secret exponent
 
         byte[] secretExpBytes = secretExp.toByteArray();
-        secretKey = new SecretKeySpec(secretExpBytes, 0, 32, "AES");
+        secretKey = new SecretKeySpec(secretExpBytes, 0, encBitLength / 8, "AES");
+
                                                                 // re-instantiate the secret key
 
         // System.out.printf("New secret exponent: %d - %s\n", secretExpBytes.length, secretExp.toString());
@@ -91,7 +97,6 @@ public class Cryptographer {
     public String Mac(String input) {
 
         Mac macObj = null;
-        String macAlgo = "HmacSHA256";
         try {
             macObj = Mac.getInstance(macAlgo);
             macObj.init(secretKey);
