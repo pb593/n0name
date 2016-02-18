@@ -1,3 +1,5 @@
+package scaffolding;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -25,7 +27,7 @@ public class AddressBook {
             myAddress = InetAddress.getLocalHost().getHostAddress();
         }
         catch (UnknownHostException e) {
-            Main.logger.severe("Unable to retrieve my IP address to report to address server.");
+            System.err.print("Unable to retrieve my IP address to report to address server.");
             return;
         }
         String urlToRead = servUrl + "/check-in/" + userID + "/" + myAddress + "/" + port.toString();

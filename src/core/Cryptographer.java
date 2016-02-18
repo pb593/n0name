@@ -1,4 +1,4 @@
-/**
+package core; /**
  * Created by pb593 on 23/11/2015.
  */
 

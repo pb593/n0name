@@ -1,3 +1,5 @@
+package scaffolding;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -43,7 +45,7 @@ public class HTTPHandler {
 
             }
             catch (IOException e) {
-                Main.logger.severe("Unable to do a HTTP GET request to the address server...");
+                System.err.print("Unable to do a HTTP GET request to the address server...");
                 System.exit(-1);
             }
 
@@ -73,7 +75,7 @@ public class HTTPHandler {
                 result.append(line);
             }
         } catch (Exception e) {
-            Main.logger.severe("Unable to do a HTTP POST request to the address server...");
+            System.err.print("Unable to do a HTTP POST request to the address server...");
             e.printStackTrace();
             System.exit(-1);
         }

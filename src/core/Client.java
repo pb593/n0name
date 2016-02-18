@@ -1,4 +1,4 @@
-/**
+package core; /**
  * Created by pb593 on 19/11/2015.
  */
 
@@ -8,6 +8,7 @@ import message.InviteMessage;
 import message.Message;
 import message.TextMessage;
 import org.json.simple.parser.ParseException;
+import scaffolding.AddressBook;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -39,7 +40,7 @@ public class Client implements Runnable {
                 commtmp = new Communicator(this, port); //try to bind to port
                 // start communicator, giving it a reference back to Client
             } catch (IOException e) { // can't bind to the port
-                Main.logger.config("Communicator unable to bind to port " + port + ". Looking for another one.");
+                System.err.print("Communicator unable to bind to port " + port + ". Looking for another one.");
                 continue;
             }
             break;
@@ -121,7 +122,7 @@ public class Client implements Runnable {
                     try {
                         Thread.sleep(5000); // sleep for 5 seconds
                     } catch (InterruptedException e) {
-                        Main.logger.severe("Sleep() call failed in address reporting thread.");
+                        System.err.print("Sleep() call failed in address reporting thread.");
                     }
                 }
 

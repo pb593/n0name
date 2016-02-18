@@ -1,4 +1,4 @@
-/**
+package core; /**
  * Created by pb593 on 08/11/2015.
  *
  * This class will implement the basic network communication functionality required.
@@ -8,8 +8,8 @@
  *
  */
 
-import message.Message;
-import org.json.simple.parser.ParseException;
+import scaffolding.AddressBook;
+import scaffolding.StoreAndForward;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -31,7 +31,7 @@ class Communicator extends Thread {
         @Override
         public void run() { //start listening on the port for incoming messages
             boolean ERROR = false;
-            Main.logger.info(String.format("Communicator with id=%d has started on port=%d\n", id, port));
+            System.out.print(String.format("Communicator with id=%d has started on port=%d\n", id, port));
             while (!ERROR) {
                 try {
                     Socket s = srvskt.accept();
@@ -40,7 +40,7 @@ class Communicator extends Thread {
                     msgReceived(jsonLine); // pass to client in a thread-safe way
                 }
                 catch (IOException e) {
-                    Main.logger.severe(String.format("Communicator with id = %d has broken down upon accepting a connection",
+                    System.err.print(String.format("Communicator with id = %d has broken down upon accepting a connection",
                             id));
                     ERROR = true;
                 }
@@ -101,7 +101,7 @@ class Communicator extends Thread {
     public synchronized boolean send(String userID, String urlSafeString){
         InetSocketAddress dest = AddressBook.lookup(userID); // get address of the user
         if(dest == null) {// user not in address book
-            Main.logger.warning(String.format("Communicator failed to send msg to user %s. User not in address book",
+            System.err.print(String.format("Communicator failed to send msg to user %s. User not in address book",
                         userID));
             return false;
         }
@@ -117,7 +117,7 @@ class Communicator extends Thread {
                 return true;
             }
         } catch (IOException e) {
-            Main.logger.warning(String.format("Error sending message to address %s:%d\n",
+            System.err.print(String.format("Error sending message to address %s:%d\n",
                     dest.getHostString() , dest.getPort()));
             return false;
         }

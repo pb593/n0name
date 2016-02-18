@@ -1,3 +1,4 @@
+import core.Client;
 import exception.UserIDTakenException;
 
 import java.util.Scanner;

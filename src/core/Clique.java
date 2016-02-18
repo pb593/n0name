@@ -1,4 +1,7 @@
+package core;
+
 import message.*;
+import scaffolding.AddressBook;
 
 import java.math.BigInteger;
 import java.util.ArrayList;

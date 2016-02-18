@@ -1,5 +1,6 @@
 package message.patching;
 
+import core.VectorClock;
 import message.Message;
 
 /**
@@ -7,9 +8,11 @@ import message.Message;
  */
 public class UpdateRequestMessage extends Message {
 
+    public final VectorClock vectorClk;
 
-    protected UpdateRequestMessage(String author, String cliqueName) {
+    public UpdateRequestMessage(VectorClock clk, String author, String cliqueName) {
         super(author, cliqueName);
+        vectorClk = clk;
     }
 
     @Override
