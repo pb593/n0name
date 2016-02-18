@@ -2,6 +2,7 @@ package message;
 
 import interfaces.JSONizable;
 import message.patching.UpdateRequestMessage;
+import message.patching.UpdateResponseMessage;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -39,6 +40,8 @@ public abstract class Message implements JSONizable {
             return new UserAddedNotificationMessage(obj);
         else if(msg_type.equals("UpdateRequestMessage"))
             return new UpdateRequestMessage(obj);
+        else if(msg_type.equals("UpdateResponseMessage"))
+            return new UpdateResponseMessage(obj);
         else
             throw new ParseException(0); // msg_type is something unexpected
 
