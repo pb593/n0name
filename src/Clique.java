@@ -20,6 +20,8 @@ public class Clique {
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
     private final Cryptographer crypto = new Cryptographer();
 
+    private VectorClock vectorClk = new VectorClock();
+
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
         this.client = client;
@@ -187,6 +189,8 @@ public class Clique {
             synchronized (messageHistory) {
                 messageHistory.add((TextMessage) msg);
             }
+            vectorClk.increment(msg.author); // increment the vector clock appropriately
+            vectorClk.print();
         }
     }
 
