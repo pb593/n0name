@@ -27,14 +27,14 @@ public class UserAddedNotificationMessage extends Message implements Serializabl
     }
 
     @Override
-    public String toJSON() {
+    public JSONObject toJSON() {
         JSONObject obj = super.startJSON();
 
         obj.put("msg_type", this.getClass().getSimpleName());
         obj.put("userID", userID);
         obj.put("publicKey", pubKey.toString());
 
-        return obj.toJSONString();
+        return obj;
 
     }
 

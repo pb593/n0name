@@ -27,14 +27,14 @@ public class InviteResponseMessage extends Message implements Serializable {
 
 
     @Override
-    public String toJSON() {
+    public JSONObject toJSON() {
         JSONObject obj = super.startJSON();
 
         obj.put("msg_type", this.getClass().getSimpleName());
         obj.put("isAccept", isAccept);
         obj.put("publicKey", pubKey.toString());
 
-        return obj.toJSONString();
+        return obj;
 
     }
 

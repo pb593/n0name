@@ -115,7 +115,7 @@ public class Cryptographer {
     }
 
     public String encryptMsg(Message msg) {
-        byte[] bytes = msg.toJSON().getBytes();
+        byte[] bytes = msg.toJSON().toJSONString().getBytes();
         byte[] bytesEncrypted = encryptBytes(bytes);
         return Base64.encodeBase64URLSafeString(bytesEncrypted);
     }

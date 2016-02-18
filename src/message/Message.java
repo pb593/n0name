@@ -1,5 +1,7 @@
 package message;
 
+import interfaces.JSONizable;
+import message.patching.UpdateRequestMessage;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -10,12 +12,10 @@ import java.io.Serializable;
  *  Base class for all possible types of messages.
  **/
 
-public abstract class Message implements Serializable {
+public abstract class Message implements JSONizable {
 
     public final String author; //userID
     public final String cliqueName; // name of clique to which message belongs
-
-    static final long serialVersionUID = 1L;
 
     protected Message(String author, String cliqueName) {
         this.author = author;
@@ -37,13 +37,12 @@ public abstract class Message implements Serializable {
             return new TextMessage(obj);
         else if(msg_type.equals("UserAddedNotificationMessage"))
             return new UserAddedNotificationMessage(obj);
+        else if(msg_type.equals("UpdateRequestMessage"))
+            return new UpdateRequestMessage(obj);
         else
             throw new ParseException(0); // msg_type is something unexpected
 
     }
-
-
-    abstract public String toJSON();
 
     protected JSONObject startJSON() {
         // method called by children of this class

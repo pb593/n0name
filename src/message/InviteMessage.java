@@ -29,7 +29,7 @@ public class InviteMessage extends Message implements Serializable {
     }
 
     @Override
-    public String toJSON() {
+    public JSONObject toJSON() {
 
         JSONObject obj = super.startJSON();
 
@@ -37,7 +37,7 @@ public class InviteMessage extends Message implements Serializable {
         obj.put("userList", StringUtils.join(userList, ", "));
         obj.put("publicKey", pubKey.toString());
 
-        return obj.toJSONString();
+        return obj;
     }
 
 }

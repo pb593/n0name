@@ -17,13 +17,14 @@ public class Clique {
 
     private final String name;
     private final HashMap<String, User> members = new HashMap<>();
-    private final List<TextMessage> messageHistory = new ArrayList<>(); // messages in the order of arrival
+    private final MessageHistory history = new MessageHistory(); // messages in the order of arrival
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
     private final Cryptographer crypto = new Cryptographer();
 
     private VectorClock vectorClk = new VectorClock();
+    private Integer lamportTimestamp = 0;
 
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
@@ -53,7 +54,7 @@ public class Clique {
         }
 
         Message invRespMsg = new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name);
-        String toTransmit = "NoNaMe" + invRespMsg.toJSON();
+        String toTransmit = "NoNaMe" + invRespMsg.toJSON().toJSONString();
 
         comm.send(invmsg.author, toTransmit); // reply, accepting the invitation and sending my pubkey
 
@@ -72,7 +73,7 @@ public class Clique {
 
             }
 
-            String toTransmit = "NoNaMe" + invMsg.toJSON();
+            String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
             // send the invite
             comm.send(userID, toTransmit);
             // mark invite as pending response
@@ -88,13 +89,7 @@ public class Clique {
     }
 
     public List<TextMessage> getLastFive() {
-        synchronized (messageHistory) {
-            int size = messageHistory.size();
-            if (size >= 5)
-                return messageHistory.subList(size - 5, size);
-            else
-                return messageHistory;
-        }
+        return history.getLastFive();
     }
 
     public List<String> getUserList() {
@@ -109,9 +104,13 @@ public class Clique {
     public void sendMessage(Message msg) {
         /* Send message to the whole clique (including myself) */
 
+        if(msg instanceof TextMessage) {
+            timestamp((TextMessage) msg); // timestamp the message
+        }
+
         synchronized (members) {
             for (String userID : members.keySet()) {
-                String toTransmit = prepareMsgForTransmission(msg);
+                String toTransmit = encryptAndMac(msg);
                 comm.send(userID, toTransmit);
             }
         }
@@ -167,7 +166,7 @@ public class Clique {
 
                         if(!peer.equals(this.client.getUserID())) {
                             String toTransmit =
-                                    prepareMsgForTransmission(new UserAddedNotificationMessage(newUserID,
+                                    encryptAndMac(new UserAddedNotificationMessage(newUserID,
                                                                         newUserPubKey, client.getUserID(), this.name));
                             comm.send(peer, toTransmit);
 
@@ -189,15 +188,27 @@ public class Clique {
             }
         }
         else if(msg instanceof TextMessage) { // it's just a simple message, insert into history
-            synchronized (messageHistory) {
-                messageHistory.add((TextMessage) msg);
-            }
-            vectorClk.increment(msg.author); // increment the vector clock appropriately
+            TextMessage txtMsg = (TextMessage) msg;
+            history.insert(txtMsg);
+
+            // update the vector clock appropriately
+            vectorClk.increment(msg.author);
+
+            // update lamport TS
+            lamportTimestamp = Math.max(lamportTimestamp, txtMsg.lamportTime)  + 1;
+
+
+
+            System.out.printf("LamportTS: %d\n", lamportTimestamp);
             vectorClk.print();
         }
     }
 
-    private String prepareMsgForTransmission(Message msg) {
+    private void timestamp(TextMessage txtMsg) {
+        txtMsg.lamportTime = lamportTimestamp; // set to my Lamport ts
+    }
+
+    private String encryptAndMac(Message msg) {
 
         String cliqueTag = crypto.Mac(this.name); // MAC(K, cliqueName)
         String encString = crypto.encryptMsg(msg); // ENC(K, msg)

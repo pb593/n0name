@@ -1,5 +1,9 @@
 import core.Client;
+import core.VectorClock;
 import exception.UserIDTakenException;
+import message.Message;
+import message.patching.UpdateRequestMessage;
+import org.json.simple.parser.ParseException;
 
 import java.util.Scanner;
 import java.util.logging.ConsoleHandler;
