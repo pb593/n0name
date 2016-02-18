@@ -3,6 +3,7 @@
  */
 
 import com.sun.deploy.util.StringUtils;
+import exception.UserIDTakenException;
 import message.InviteMessage;
 import message.Message;
 import message.TextMessage;
@@ -24,7 +25,10 @@ public class Client implements Runnable {
     private final ConcurrentHashMap<String, String> addressTags = new ConcurrentHashMap<>();
                                                             // for fast lookup addressTag -> cliqueName
 
-    public Client(String userID) {
+    public Client(String userID) throws UserIDTakenException {
+
+        if(AddressBook.contains(userID)) // userID is already in use
+            throw new UserIDTakenException();
 
         Random rnd = new Random();
         int port = 0; // prepare to choose randomly

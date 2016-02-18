@@ -1,3 +1,5 @@
+import exception.UserIDTakenException;
+
 import java.util.Scanner;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
@@ -7,7 +9,7 @@ public class Main {
 
     public final static Logger logger = Logger.getAnonymousLogger();
 
-    public static void main(String[] argv){
+    public static void main(String[] argv) {
 
         //tune the logger
         logger.setUseParentHandlers(false); //disable default handlers
@@ -17,12 +19,21 @@ public class Main {
         logger.addHandler(handler);
 
 
-        System.out.print("Please pick a username:\n> ");
-        Scanner scanner = new Scanner(System.in);
-        String userID = scanner.nextLine().trim();
+        Client cl = null;
+        while(true) {
+            System.out.print("Please pick a username:\n> ");
+            Scanner scanner = new Scanner(System.in);
+            String userID = scanner.nextLine().trim();
 
-        Client cl = new Client(userID);
-        cl.run(); //run the client in the same thread
+            try {
+                cl = new Client(userID);
+                break; // exit loop if Client successfully constructed
+            } catch (UserIDTakenException e) {
+                System.out.println("Username already in use. Pick another one.");
+            }
+        }
+        cl.run(); // run the client in the same thread
+
 
     }
 }
