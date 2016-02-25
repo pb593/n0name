@@ -1,30 +1,28 @@
 package core;
 
 import message.*;
+import message.patching.UpdateRequestMessage;
+import message.patching.UpdateResponseMessage;
 import scaffolding.AddressBook;
+import scaffolding.Utils;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by pb593 on 19/11/2015.
  */
 
-public class Clique {
+public class Clique extends Thread {
 
-    private final String name;
+    public final String name;
     private final HashMap<String, User> members = new HashMap<>();
     private final MessageHistory history = new MessageHistory(); // messages in the order of arrival
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
+    private final HashSet<String> pendingPatchRequests = new HashSet<>(); // users I have sent a patch request to
     private final Cryptographer crypto = new Cryptographer();
-
-    private VectorClock vectorClk = new VectorClock();
-    private Integer lamportTimestamp = 0;
 
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
@@ -62,6 +60,41 @@ public class Clique {
         client.addAddressTag(getCurrentAddressTag(), this.name); // publish the new address tag
     }
 
+    @Override
+    public void run() {
+        // active code of the Clique
+        // Goals:
+        //      1. participate in patching process
+        //      2. seal off blocks
+        Random rn = new Random();
+        while(true) {
+            // TODO: might need to tweak the delays later
+            int delay = 1000 + rn.nextInt(4000); // between 1000 and 5000 ms
+            Utils.sleep(delay);
+
+            // TODO: more fine-grained locking?
+            // issue a randomly spaced burst of patch requests
+            synchronized (members) { // get a lock for memebers
+                for(String userID: members.keySet()) {
+                    synchronized (pendingPatchRequests) { // get a lock on pending patch requests
+                        if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.contains(userID)) {
+                            UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
+                                    client.getUserID(), this.name);
+                            String toTransmit = encryptAndMac(urm);
+                            comm.send(userID, toTransmit);
+                            pendingPatchRequests.add(userID);
+                            // System.out.printf("Clique: sent UpdateRequestMessage to user %s\n", userID);
+                            Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
+                        }
+                    }
+                }
+            }
+
+
+        }
+
+    }
+
     public void addMember(String userID) {
 
         if(AddressBook.contains(userID)) {
@@ -84,7 +117,7 @@ public class Clique {
         }
     }
 
-    public String getName() {
+    public String getCliqueName() {
         return name;
     }
 
@@ -105,13 +138,16 @@ public class Clique {
         /* Send message to the whole clique (including myself) */
 
         if(msg instanceof TextMessage) {
-            timestamp((TextMessage) msg); // timestamp the message
+            TextMessage txtMsg = (TextMessage) msg;
+            timestamp(txtMsg); // timestamp the message
+            history.insert(txtMsg);
         }
-
-        synchronized (members) {
-            for (String userID : members.keySet()) {
-                String toTransmit = encryptAndMac(msg);
-                comm.send(userID, toTransmit);
+        else {
+            synchronized (members) {
+                for (String userID : members.keySet()) {
+                    String toTransmit = encryptAndMac(msg);
+                    comm.send(userID, toTransmit);
+                }
             }
         }
     }
@@ -120,10 +156,10 @@ public class Clique {
         String mac = datagram.substring(0, Cryptographer.macB64StringLength);
         String encMsg = datagram.substring(Cryptographer.macB64StringLength);
 
-        // verify the MAC
+        //verify the MAC
         if(!mac.equals(crypto.Mac(this.name + encMsg))) { // if MACs do not match
             System.err.println("Received message failed to pass integrity check");
-            return;
+            return; // just drop it if message invalid
         }
 
         Message msg = crypto.decryptMsg(encMsg);
@@ -187,25 +223,69 @@ public class Clique {
 
             }
         }
-        else if(msg instanceof TextMessage) { // it's just a simple message, insert into history
-            TextMessage txtMsg = (TextMessage) msg;
-            history.insert(txtMsg);
+        else if(msg instanceof UpdateRequestMessage) { // patching request
+            UpdateRequestMessage urm = (UpdateRequestMessage) msg;
+            VectorClock otherVC = urm.vectorClk;
 
-            // update the vector clock appropriately
-            vectorClk.increment(msg.author);
+            //System.out.printf("Received an UpdateRequestMessage from %s. Their vc:", urm.author);
+            //otherVC.print();
 
-            // update lamport TS
-            lamportTimestamp = Math.max(lamportTimestamp, txtMsg.lamportTime)  + 1;
+            //form a response
+            List<TextMessage> missingMsgs = history.getMissingMessages(otherVC);
+
+            /*
+            if(!missingMsgs.isEmpty()) {
+                System.out.printf("missingMsgs:\n");
+                for (TextMessage t : missingMsgs) {
+                    System.out.printf("\t%s\n", t.text);
+                }
+                System.out.println();
+            } */
+
+
+            UpdateResponseMessage resp = new UpdateResponseMessage(missingMsgs, client.getUserID(), this.name);
+            String toTransmit = encryptAndMac(resp);
+            comm.send(urm.author, toTransmit); // reply to the author
+            // System.out.println("Successfully sent an UpdateResponseMessage");
+        }
+        else if(msg instanceof UpdateResponseMessage) {
+            UpdateResponseMessage resp = (UpdateResponseMessage)msg;
+            // System.out.printf("Received an UpdateResponseMessage from %s\n", resp.author);
+
+            // verify that this is a legit response to an actually sent request
+            synchronized (pendingPatchRequests) {
+                if(!pendingPatchRequests.contains(resp.author)) {// if I did not send a patch request
+                    // System.out.println("Nope, I did not ask this user for an update. Dropping this.");
+                    return; // just ignore this message
+                }
+                else {
+                    // System.out.println("Yep, I asked for an update.");
+                    pendingPatchRequests.remove(resp.author); // remove if response is legit
+                }
+            }
+
+
+            List<TextMessage> missing = resp.missingMessages;
+            /*
+            if(!missing.isEmpty()) {
+                System.out.printf("Missing messages from newly arrived UpdateResponse:\n");
+                for (TextMessage t : missing) {
+                    System.out.printf("\t%s\n", t.text);
+                }
+                System.out.println();
+            } */
 
 
 
-            System.out.printf("LamportTS: %d\n", lamportTimestamp);
-            vectorClk.print();
+            history.insertAll(missing); // insert into history
+        }
+        else { // some unknown message type
+            return; //just drop it
         }
     }
 
     private void timestamp(TextMessage txtMsg) {
-        txtMsg.lamportTime = lamportTimestamp; // set to my Lamport ts
+        txtMsg.lamportTime = history.getCurrentLamportTS(); // set to my Lamport ts
     }
 
     private String encryptAndMac(Message msg) {
@@ -216,7 +296,9 @@ public class Clique {
 
         // MSG_LAYOUT: MAC(K, cliqueName) || MAC(K, cliqueName || ENC(K, msg)) || ENC(K, msg)
 
-        return cliqueTag + mac + encString;
+        return cliqueTag +
+                mac +
+                encString;
 
     }
 

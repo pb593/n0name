@@ -18,8 +18,8 @@ public class TextMessageComparator implements Comparator<TextMessage> {
 
         if(d != 0)
             return -d; // want later messages (bigger TS) to be first in the list
-        else
-            return m1.author.compareTo(m2.author); // resolve ties using natural string ordering
+        else // d == 0
+            return m2.hashCode() - m1.hashCode(); // break ties using hashCodes (returns 0 if hashCodes are same)
 
     }
 }

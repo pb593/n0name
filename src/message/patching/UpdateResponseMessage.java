@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class UpdateResponseMessage extends Message {
 
-    List<TextMessage> missingMessages;
+    public final List<TextMessage> missingMessages;
 
     public UpdateResponseMessage(List<TextMessage> missingMessages, String author, String cliqueName) {
         super(author, cliqueName);

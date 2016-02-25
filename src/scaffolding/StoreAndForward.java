@@ -8,6 +8,8 @@ import java.util.List;
  */
 public class StoreAndForward {
 
+    public static final Integer SAF_REFRESH_RATE = 1; // period of checking store-n-forward for new messages
+
     private static final String servUrl = "http://pberkovich1994.pythonanywhere.com/saf/";
 
     public static synchronized boolean send(String userID, String msg) {

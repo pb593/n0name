@@ -4,6 +4,7 @@ import message.TextMessage;
 import message.patching.TextMessageComparator;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -12,15 +13,44 @@ import java.util.TreeSet;
  */
 public class MessageHistory {
 
-    TreeSet<TextMessage> treeSet = new TreeSet<>(new TextMessageComparator());
+    private TreeSet<TextMessage> treeSet = new TreeSet<>(new TextMessageComparator());
         // later messages come up in the beginning (see comparator)
+
+    private VectorClock vectorClk = new VectorClock();
+    private Integer lamportTimestamp = 0;
 
 
     synchronized public void insert(TextMessage txtMsg) {
-        treeSet.add(txtMsg);
+        if(!treeSet.contains(txtMsg)) { // insert if not already there
+            // insert the message into the datastruct
+            treeSet.add(txtMsg);
+
+            // update the vector clock appropriately
+            vectorClk.increment(txtMsg.author);
+
+            // update lamport TS
+            lamportTimestamp = Math.max(lamportTimestamp, txtMsg.lamportTime) + 1;
+        }
     }
 
-    synchronized public List<TextMessage> getLastNBy(Integer n, String userID) {
+    synchronized public void insertAll(Collection<TextMessage> c) {
+        for(TextMessage txtMsg: c) {
+            insert(txtMsg);
+        }
+    }
+
+    synchronized public List<TextMessage> getMissingMessages(VectorClock otherVC) {
+        List<TextMessage> result = new ArrayList<>();
+        VectorClock delta = VectorClock.diff(this.vectorClk, otherVC);
+        for(String userID: delta) {
+            Integer Ndiff = delta.get(userID);
+            result.addAll(getLastNBy(Ndiff, userID));
+        }
+        return result;
+
+    }
+
+    private List<TextMessage> getLastNBy(Integer n, String userID) {
         // TODO: inefficient, optimise!
         List<TextMessage> rst = new ArrayList<>();
         Integer count = 0;
@@ -47,6 +77,14 @@ public class MessageHistory {
         }
 
         return rst;
+    }
+
+    synchronized public int getCurrentLamportTS() {
+        return lamportTimestamp;
+    }
+
+    synchronized public VectorClock getVectorClk() {
+        return vectorClk;
     }
 
     synchronized public Integer size() {

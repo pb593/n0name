@@ -4,21 +4,27 @@ import interfaces.JSONizable;
 import org.json.simple.JSONObject;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Created by pb593 on 18/02/2016.
  */
-public class VectorClock implements JSONizable{
+public class VectorClock implements Iterable<String>, JSONizable{
 
-    private final HashMap<String, Integer> vectorClk;
+    private final HashMap<String, Integer> vectorClk = new HashMap<>();
 
     public VectorClock() {
-        vectorClk = new HashMap<>();
     }
 
     public VectorClock(JSONObject jObj) {
         // jObj is a previously parsed JSONObject
-        vectorClk = (HashMap<String, Integer>)jObj;
+        for(Object userIDObj: jObj.keySet()) {
+            Object nObj = jObj.get(userIDObj);
+            String userID = userIDObj.toString();
+            Long l = (Long)nObj;
+            Integer i = l.intValue();
+            vectorClk.put(userID, i);
+        }
     }
 
     public void increment(String userID) {
@@ -48,14 +54,24 @@ public class VectorClock implements JSONizable{
         VectorClock result = new VectorClock();
 
         for(String userID: v1.vectorClk.keySet()) {
-            Integer n1 = v1.vectorClk.get(userID);
-            Integer n2 = v2.vectorClk.containsKey(userID) ? v2.vectorClk.get(userID) : 0;
-            result.vectorClk.put(userID, n1 - n2);
+            try {
+                Integer n1 = v1.vectorClk.get(userID);
+                Integer n2 = v2.vectorClk.containsKey(userID) ? v2.vectorClk.get(userID) : 0;
+                result.vectorClk.put(userID, n1 - n2);
+            }
+            catch(ClassCastException e) {
+                System.err.printf("Exception in vc.diff: %s\n", v2.vectorClk.get(userID).getClass());
+            }
         }
 
         return result;
 
 
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        return vectorClk.keySet().iterator();
     }
 
     public JSONObject toJSON() {

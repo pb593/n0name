@@ -1,6 +1,5 @@
 package message;
 
-import core.VectorClock;
 import org.json.simple.JSONObject;
 
 import java.io.Serializable;
@@ -34,6 +33,21 @@ public class TextMessage extends Message implements Serializable {
 
         return obj;
 
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if(other == null || !(other instanceof TextMessage)) {
+            return false;
+        }
+        else {
+            return this.hashCode() == other.hashCode();
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return (this.author + this.cliqueName + this.text + this.lamportTime.toString()).hashCode();
     }
 
 

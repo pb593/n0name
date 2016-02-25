@@ -9,6 +9,7 @@ import message.Message;
 import message.TextMessage;
 import org.json.simple.parser.ParseException;
 import scaffolding.AddressBook;
+import scaffolding.Utils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -70,6 +71,7 @@ public class Client implements Runnable {
             if(msg instanceof InviteMessage) { // if somebody added me to this clique
                 Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
                 cliques.put(msg.cliqueName, c); // put into the clique hashmap
+                c.start(); // patching and sealing component
             }
             else {
                 cliques.get(msg.cliqueName).messageReceived(msg); // pass the message to clique
@@ -119,11 +121,7 @@ public class Client implements Runnable {
 
                 while(true) {
                     AddressBook.checkin(userID, comm.getPort());
-                    try {
-                        Thread.sleep(5000); // sleep for 5 seconds
-                    } catch (InterruptedException e) {
-                        System.err.print("Sleep() call failed in address reporting thread.");
-                    }
+                    Utils.sleep(5000);
                 }
 
             }
@@ -194,6 +192,7 @@ public class Client implements Runnable {
                         Clique c = new Clique(newCliqueName, this, comm);
                         cliques.put(newCliqueName, c); // insert new clique
                         addressTags.put(c.getCurrentAddressTag(), newCliqueName);
+                        c.start(); // patching and sealing component
                         System.out.printf("A new empty group with name '%s' has been created.\n", newCliqueName);
                     }
                     else {
@@ -263,7 +262,7 @@ public class Client implements Runnable {
         Scanner scanner = new Scanner(System.in);
         while(true) {
             cls();
-            System.out.printf("Group Name: %s\n", clique.getName());
+            System.out.printf("Group Name: %s\n", clique.getCliqueName());
             System.out.printf("Members: %s\n", StringUtils.join(clique.getUserList(), ", "));
             List<TextMessage> last5 = clique.getLastFive();
             if(last5.size() > 0) {
@@ -286,7 +285,7 @@ public class Client implements Runnable {
                 return;
             else if(str.startsWith("msg")) { // WRITE MESSAGE
                 String txt = (str.charAt(3) == ' ') ? str.substring(4) : str.substring(3);
-                TextMessage newmsg = new TextMessage(txt, this.userID, clique.getName()); // create new message
+                TextMessage newmsg = new TextMessage(txt, this.userID, clique.getCliqueName()); // create new message
                 clique.sendMessage(newmsg); //send message to clique using Communicator
                 System.out.println("Message sent.");
                 pressAnyKeyToContinue();
@@ -295,14 +294,14 @@ public class Client implements Runnable {
                 String[] tokens = str.split("\\s+"); //split command on whitespace
                 if(tokens.length >= 2) {
                     String userID = tokens[1];
-                    if(cliques.containsKey(clique.getName()) && AddressBook.contains(userID)){
-                        Clique c = cliques.get(clique.getName()); // get clique with this name
+                    if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
+                        Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
                         c.addMember(userID); // add user to group
-                        System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getName());
+                        System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getCliqueName());
                     }
                     else {
                         System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
-                                                                                            clique.getName(), userID);
+                                clique.getCliqueName(), userID);
                     }
                 }
                 else {

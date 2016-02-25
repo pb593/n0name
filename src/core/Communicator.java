@@ -10,6 +10,7 @@ package core; /**
 
 import scaffolding.AddressBook;
 import scaffolding.StoreAndForward;
+import scaffolding.Utils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -24,10 +25,8 @@ class Communicator extends Thread {
     private final int port;
     private final int id;
 
-    private final Integer SAF_REQUEST_RATE = 5; // period of checking store-n-forward for new messages
 
-
-    private final Thread sktserver = new Thread () {
+    private final Thread sktserver = new Thread () { // P2P receiver, binds on a port and listens
         @Override
         public void run() { //start listening on the port for incoming messages
             boolean ERROR = false;
@@ -54,11 +53,7 @@ class Communicator extends Thread {
             while(true) {
                 List<String> jsonLines = StoreAndForward.retrieve(client.getUserID());
                 if(jsonLines == null) {
-                    try {
-                        Thread.sleep(SAF_REQUEST_RATE * 1000); // sleep for 5 seconds
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    Utils.sleep(StoreAndForward.SAF_REFRESH_RATE * 1000);
                 }
                 else {
                     for(String l: jsonLines) {
@@ -101,7 +96,7 @@ class Communicator extends Thread {
     public synchronized boolean send(String userID, String urlSafeString){
         InetSocketAddress dest = AddressBook.lookup(userID); // get address of the user
         if(dest == null) {// user not in address book
-            System.err.print(String.format("Communicator failed to send msg to user %s. User not in address book",
+            System.err.print(String.format("Communicator failed to send msg to user %s. User not in address book\n",
                         userID));
             return false;
         }
