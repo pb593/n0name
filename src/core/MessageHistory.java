@@ -31,7 +31,7 @@ public class MessageHistory {
             // update lamport TS
             lamportTimestamp += 1; // increment on sending new message
 
-            System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
+            // System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
 
         }
     }
@@ -46,7 +46,7 @@ public class MessageHistory {
         }
 
         lamportTimestamp = Math.max(maxTS, lamportTimestamp) + 1; // update on patch
-        System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
+        // System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
     }
 
     synchronized public List<TextMessage> getMissingMessages(VectorClock otherVC) {
