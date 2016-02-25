@@ -140,7 +140,7 @@ public class Clique extends Thread {
         if(msg instanceof TextMessage) {
             TextMessage txtMsg = (TextMessage) msg;
             timestamp(txtMsg); // timestamp the message
-            history.insert(txtMsg);
+            history.insertMyNewMessage(txtMsg);
         }
         else {
             synchronized (members) {
@@ -153,6 +153,8 @@ public class Clique extends Thread {
     }
 
     public void datagramReceived(String datagram) {
+        /* Callback received from Client class */
+
         String mac = datagram.substring(0, Cryptographer.macB64StringLength);
         String encMsg = datagram.substring(Cryptographer.macB64StringLength);
 
@@ -277,7 +279,7 @@ public class Clique extends Thread {
 
 
 
-            history.insertAll(missing); // insert into history
+            history.insertPatch(missing); // insert into history
         }
         else { // some unknown message type
             return; //just drop it

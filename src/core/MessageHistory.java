@@ -20,8 +20,8 @@ public class MessageHistory {
     private Integer lamportTimestamp = 0;
 
 
-    synchronized public void insert(TextMessage txtMsg) {
-        if(!treeSet.contains(txtMsg)) { // insert if not already there
+    synchronized public void insertMyNewMessage(TextMessage txtMsg) {
+        if(!treeSet.contains(txtMsg)) { // if not already presebt in history
             // insert the message into the datastruct
             treeSet.add(txtMsg);
 
@@ -29,14 +29,24 @@ public class MessageHistory {
             vectorClk.increment(txtMsg.author);
 
             // update lamport TS
-            lamportTimestamp = Math.max(lamportTimestamp, txtMsg.lamportTime) + 1;
+            lamportTimestamp += 1; // increment on sending new message
+
+            System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
+
         }
     }
 
-    synchronized public void insertAll(Collection<TextMessage> c) {
+    synchronized public void insertPatch(Collection<TextMessage> c) {
+
+        int maxTS = 0;
+
         for(TextMessage txtMsg: c) {
-            insert(txtMsg);
+            treeSet.add(txtMsg);
+            if(txtMsg.lamportTime > maxTS) maxTS = txtMsg.lamportTime;
         }
+
+        lamportTimestamp = Math.max(maxTS, lamportTimestamp) + 1; // update on patch
+        System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
     }
 
     synchronized public List<TextMessage> getMissingMessages(VectorClock otherVC) {

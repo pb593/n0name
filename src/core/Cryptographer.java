@@ -89,8 +89,8 @@ public class Cryptographer {
 
                                                                 // re-instantiate the secret key
 
-        //System.out.printf("New secret exponent: %s\n", new String(secretKey.getEncoded()));
-                                                                                    //TODO: remove in prod version
+        // System.out.printf("New secret exponent: %s\n", new String(secretKey.getEncoded()));
+        // TODO: remove in prod version
 
     }
 
