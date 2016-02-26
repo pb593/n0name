@@ -21,7 +21,7 @@ public class Clique extends Thread {
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
-    private final HashSet<String> pendingPatchRequests = new HashSet<>(); // users I have sent a patch request to
+    private final HashMap<String, Long> pendingPatchRequests = new HashMap<>(); // users I have sent a patch request to
     private final Cryptographer crypto = new Cryptographer();
 
     public Clique(String name, Client client, Communicator comm) {
@@ -66,30 +66,47 @@ public class Clique extends Thread {
         // Goals:
         //      1. participate in patching process
         //      2. seal off blocks
+
+        // various time parameters of the patching algo (in seconds)
+        final int PATCH_REQUEST_PERIOD_LOW = 1;
+        final int PATCH_REQUEST_PERIOD_HIGH = 5;
+        final int PATCH_REQUEST_TIMEOUT = 10;
+
         Random rn = new Random();
         while(true) {
             // TODO: might need to tweak the delays later
-            int delay = 1000 + rn.nextInt(4000); // between 1000 and 5000 ms
+            int delay = PATCH_REQUEST_PERIOD_LOW * 1000 +
+                    rn.nextInt((PATCH_REQUEST_PERIOD_HIGH - PATCH_REQUEST_PERIOD_LOW) * 1000);
+                                                                                        // between 1000 and 5000 ms
             Utils.sleep(delay);
+
+            // clean up expired patch requests from pendingPatchRequests
+            synchronized (pendingPatchRequests) {
+                for (Iterator<Map.Entry<String, Long>> it = pendingPatchRequests.entrySet().iterator(); it.hasNext(); ){
+                    Map.Entry<String, Long> entry = it.next();
+                    if (System.currentTimeMillis() - entry.getValue() > PATCH_REQUEST_TIMEOUT * 1000) { // if expired
+                        it.remove(); // delete
+                    }
+                }
+            }
 
             // TODO: more fine-grained locking?
             // issue a randomly spaced burst of patch requests
             synchronized (members) { // get a lock for memebers
                 for(String userID: members.keySet()) {
                     synchronized (pendingPatchRequests) { // get a lock on pending patch requests
-                        if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.contains(userID)) {
+                        if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.keySet().contains(userID)) {
                             UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
                                     client.getUserID(), this.name);
                             String toTransmit = encryptAndMac(urm);
                             comm.send(userID, toTransmit);
-                            pendingPatchRequests.add(userID);
+                            pendingPatchRequests.put(userID, System.currentTimeMillis());
                             // System.out.printf("Clique: sent UpdateRequestMessage to user %s\n", userID);
                             Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
                         }
                     }
                 }
             }
-
 
         }
 
@@ -256,7 +273,7 @@ public class Clique extends Thread {
 
             // verify that this is a legit response to an actually sent request
             synchronized (pendingPatchRequests) {
-                if(!pendingPatchRequests.contains(resp.author)) {// if I did not send a patch request
+                if(!pendingPatchRequests.keySet().contains(resp.author)) {// if I did not send a patch request
                     // System.out.println("Nope, I did not ask this user for an update. Dropping this.");
                     return; // just ignore this message
                 }
