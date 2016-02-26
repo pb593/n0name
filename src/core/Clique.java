@@ -8,6 +8,7 @@ import scaffolding.Utils;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by pb593 on 19/11/2015.
@@ -16,12 +17,12 @@ import java.util.*;
 public class Clique extends Thread {
 
     public final String name;
-    private final HashMap<String, User> members = new HashMap<>();
+    private final ConcurrentHashMap<String, User> members = new ConcurrentHashMap<>();
     private final MessageHistory history = new MessageHistory(); // messages in the order of arrival
     private final Client client;
     private final Communicator comm;
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
-    private final HashMap<String, Long> pendingPatchRequests = new HashMap<>(); // users I have sent a patch request to
+    private final ConcurrentHashMap<String, Long> pendingPatchRequests = new ConcurrentHashMap<>(); // users I have sent a patch request to
     private final Cryptographer crypto = new Cryptographer();
 
     public Clique(String name, Client client, Communicator comm) {
@@ -30,9 +31,7 @@ public class Clique extends Thread {
         this.comm = comm;
 
         // put myself in the Clique
-        synchronized (members) {
-            members.put(client.getUserID(), new User(client.getUserID()));
-        }
+        members.put(client.getUserID(), new User(client.getUserID()));
         client.addAddressTag(getCurrentAddressTag(), this.name);
     }
 
@@ -44,11 +43,9 @@ public class Clique extends Thread {
         this.comm = comm;
 
         // put all users into the members list (including myself)
-        synchronized (members) {
-            members.put(client.getUserID(), new User(client.getUserID()));
-            for (String username : invmsg.userList) {
-                members.put(username, new User(username));
-            }
+        members.put(client.getUserID(), new User(client.getUserID()));
+        for (String username : invmsg.userList) {
+            members.put(username, new User(username));
         }
 
         Message invRespMsg = new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name);
@@ -81,33 +78,26 @@ public class Clique extends Thread {
             Utils.sleep(delay);
 
             // clean up expired patch requests from pendingPatchRequests
-            synchronized (pendingPatchRequests) {
-                for (Iterator<Map.Entry<String, Long>> it = pendingPatchRequests.entrySet().iterator(); it.hasNext(); ){
-                    Map.Entry<String, Long> entry = it.next();
-                    if (System.currentTimeMillis() - entry.getValue() > PATCH_REQUEST_TIMEOUT * 1000) { // if expired
-                        it.remove(); // delete
-                    }
+            for (Iterator<Map.Entry<String, Long>> it = pendingPatchRequests.entrySet().iterator(); it.hasNext(); ){
+                Map.Entry<String, Long> entry = it.next();
+                if (System.currentTimeMillis() - entry.getValue() > PATCH_REQUEST_TIMEOUT * 1000) { // if expired
+                    it.remove(); // delete
                 }
             }
 
             // TODO: more fine-grained locking?
             // issue a randomly spaced burst of patch requests
-            synchronized (members) { // get a lock for memebers
-                for(String userID: members.keySet()) {
-                    synchronized (pendingPatchRequests) { // get a lock on pending patch requests
-                        if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.keySet().contains(userID)) {
-                            UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
-                                    client.getUserID(), this.name);
-                            String toTransmit = encryptAndMac(urm);
-                            comm.send(userID, toTransmit);
-                            pendingPatchRequests.put(userID, System.currentTimeMillis());
-                            // System.out.printf("Clique: sent UpdateRequestMessage to user %s\n", userID);
-                            Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
-                        }
-                    }
+            for(String userID: members.keySet()) {
+                if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.keySet().contains(userID)) {
+                    UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
+                            client.getUserID(), this.name);
+                    String toTransmit = encryptAndMac(urm);
+                    comm.send(userID, toTransmit);
+                    pendingPatchRequests.put(userID, System.currentTimeMillis());
+                    // System.out.printf("Clique: sent UpdateRequestMessage to user %s\n", userID);
+                    Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
                 }
             }
-
         }
 
     }
@@ -116,12 +106,9 @@ public class Clique extends Thread {
 
         if(AddressBook.contains(userID)) {
 
-            Message invMsg = null;
-            synchronized (members) {
-                invMsg = new InviteMessage(members.keySet(), crypto.getPublicKey(),
-                        client.getUserID(), this.name);
+            Message invMsg = new InviteMessage(members.keySet(), crypto.getPublicKey(),
+                                                                                    client.getUserID(), this.name);
 
-            }
 
             String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
             // send the invite
@@ -143,10 +130,7 @@ public class Clique extends Thread {
     }
 
     public List<String> getUserList() {
-        List<String> rst = null;
-        synchronized (members) {
-            rst = new ArrayList<>(members.keySet());
-        }
+        List<String> rst = new ArrayList<>(members.keySet());
         return rst;
 
     }
@@ -160,11 +144,9 @@ public class Clique extends Thread {
             history.insertMyNewMessage(txtMsg);
         }
         else {
-            synchronized (members) {
-                for (String userID : members.keySet()) {
-                    String toTransmit = encryptAndMac(msg);
-                    comm.send(userID, toTransmit);
-                }
+            for (String userID : members.keySet()) {
+                String toTransmit = encryptAndMac(msg);
+                comm.send(userID, toTransmit);
             }
         }
     }
@@ -193,9 +175,7 @@ public class Clique extends Thread {
             String newUserID = ((UserAddedNotificationMessage) msg).userID;
             BigInteger newUserPubKey = ((UserAddedNotificationMessage) msg).pubKey;
 
-            synchronized (members) {
-                members.put(newUserID, new User(newUserID)); // insert the new user into members hashmap
-            }
+            members.put(newUserID, new User(newUserID)); // insert the new user into members hashmap
 
             String oldAddressTag = getCurrentAddressTag();
 
@@ -216,21 +196,19 @@ public class Clique extends Thread {
                 BigInteger newUserPubKey = invrespmsg.pubKey;
 
                 // notify everyone else in clique (except myself) about new user
-                synchronized (members) {
-                    for(String peer: members.keySet()) {
+                for(String peer: members.keySet()) {
 
-                        if(!peer.equals(this.client.getUserID())) {
-                            String toTransmit =
-                                    encryptAndMac(new UserAddedNotificationMessage(newUserID,
-                                                                        newUserPubKey, client.getUserID(), this.name));
-                            comm.send(peer, toTransmit);
-
-                        }
+                    if(!peer.equals(this.client.getUserID())) {
+                        String toTransmit =
+                                encryptAndMac(new UserAddedNotificationMessage(newUserID,
+                                                                    newUserPubKey, client.getUserID(), this.name));
+                        comm.send(peer, toTransmit);
 
                     }
 
-                    members.put(newUserID, new User(newUserID)); // add new user to clique
                 }
+
+                members.put(newUserID, new User(newUserID)); // add new user to clique
 
                 String oldAddressTag = getCurrentAddressTag();
 
@@ -272,15 +250,13 @@ public class Clique extends Thread {
             // System.out.printf("Received an UpdateResponseMessage from %s\n", resp.author);
 
             // verify that this is a legit response to an actually sent request
-            synchronized (pendingPatchRequests) {
-                if(!pendingPatchRequests.keySet().contains(resp.author)) {// if I did not send a patch request
-                    // System.out.println("Nope, I did not ask this user for an update. Dropping this.");
-                    return; // just ignore this message
-                }
-                else {
-                    // System.out.println("Yep, I asked for an update.");
-                    pendingPatchRequests.remove(resp.author); // remove if response is legit
-                }
+            if(!pendingPatchRequests.keySet().contains(resp.author)) {// if I did not send a patch request
+                // System.out.println("Nope, I did not ask this user for an update. Dropping this.");
+                return; // just ignore this message
+            }
+            else {
+                // System.out.println("Yep, I asked for an update.");
+                pendingPatchRequests.remove(resp.author); // remove if response is legit
             }
 
 

@@ -21,19 +21,17 @@ public class MessageHistory {
 
 
     synchronized public void insertMyNewMessage(TextMessage txtMsg) {
-        if(!treeSet.contains(txtMsg)) { // if not already presebt in history
-            // insert the message into the datastruct
-            treeSet.add(txtMsg);
+
+        if(!treeSet.contains(txtMsg)) { // if msg is not already present in history
+            treeSet.add(txtMsg); // add it
 
             // update the vector clock appropriately
             vectorClk.increment(txtMsg.author);
 
             // update lamport TS
             lamportTimestamp += 1; // increment on sending new message
-
-            // System.out.printf("New Lamport TS: %d\n", lamportTimestamp);
-
         }
+
     }
 
     synchronized public void insertPatch(Collection<TextMessage> c) {

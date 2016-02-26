@@ -53,7 +53,7 @@ class Communicator extends Thread {
             while(true) {
                 List<String> jsonLines = StoreAndForward.retrieve(client.getUserID());
                 if(jsonLines == null) {
-                    Utils.sleep(StoreAndForward.SAF_REFRESH_RATE * 1000);
+                    Utils.sleep(StoreAndForward.SAF_REFRESH_RATE);
                 }
                 else {
                     for(String l: jsonLines) {
