@@ -3,6 +3,7 @@ package core;
 import message.*;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
+import message.sealing.SealSignalMessage;
 import scaffolding.AddressBook;
 import scaffolding.Utils;
 
@@ -16,14 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Clique extends Thread {
 
-    public final String name;
-    private final ConcurrentHashMap<String, User> members = new ConcurrentHashMap<>();
-    private final MessageHistory history = new MessageHistory(); // messages in the order of arrival
-    private final Client client;
-    private final Communicator comm;
+    public final String name; // group of clique / group
+    private final Client client; // reference back to correponding client instance
+    private final Communicator comm; // reference to the communicator
+    private final Cryptographer crypto = new Cryptographer(); // reference to clique-specific instance of crpyto
+
+    private final ConcurrentHashMap<String, User> members = new ConcurrentHashMap<>(); // group members
+    private final MessageHistory history = new MessageHistory(); // messages (most recent first)
+
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
     private final ConcurrentHashMap<String, Long> pendingPatchRequests = new ConcurrentHashMap<>(); // users I have sent a patch request to
-    private final Cryptographer crypto = new Cryptographer();
+    private final ConcurrentHashMap<String, Set<String>> pendingBlockSeals = new ConcurrentHashMap<>();
+                                // block fingerprint -> set of users who still need to confirm the sealing operation
 
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
@@ -48,12 +53,12 @@ public class Clique extends Thread {
             members.put(username, new User(username));
         }
 
-        Message invRespMsg = new InviteResponseMessage(true, this.crypto.getPublicKey(), client.getUserID(), this.name);
+        Message invRespMsg = new InviteResponseMessage(true, this.crypto.getDHPublicKey(), client.getUserID(), this.name);
         String toTransmit = "NoNaMe" + invRespMsg.toJSON().toJSONString();
 
         comm.send(invmsg.author, toTransmit); // reply, accepting the invitation and sending my pubkey
 
-        crypto.acceptPublicKey(invmsg.pubKey); // update the common secret
+        crypto.acceptDHPublicKey(invmsg.pubKey); // update the common secret
         client.addAddressTag(getCurrentAddressTag(), this.name); // publish the new address tag
     }
 
@@ -65,13 +70,13 @@ public class Clique extends Thread {
         //      2. seal off blocks
 
         // various time parameters of the patching algo (in seconds)
+        // TODO: might need to tweak the delays later
         final int PATCH_REQUEST_PERIOD_LOW = 1;
         final int PATCH_REQUEST_PERIOD_HIGH = 5;
         final int PATCH_REQUEST_TIMEOUT = 10;
 
         Random rn = new Random();
         while(true) {
-            // TODO: might need to tweak the delays later
             int delay = PATCH_REQUEST_PERIOD_LOW * 1000 +
                     rn.nextInt((PATCH_REQUEST_PERIOD_HIGH - PATCH_REQUEST_PERIOD_LOW) * 1000);
                                                                                         // between 1000 and 5000 ms
@@ -85,10 +90,9 @@ public class Clique extends Thread {
                 }
             }
 
-            // TODO: more fine-grained locking?
             // issue a randomly spaced burst of patch requests
             for(String userID: members.keySet()) {
-                if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.keySet().contains(userID)) {
+                if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.containsKey(userID)) {
                     UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
                             client.getUserID(), this.name);
                     String toTransmit = encryptAndMac(urm);
@@ -98,6 +102,35 @@ public class Clique extends Thread {
                     Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
                 }
             }
+
+
+            // try to find a sealable block
+            SealableBlock sBlock = history.getNextSealableBlock(members.keySet());
+            if(sBlock != null) { // if found one
+                if(!pendingBlockSeals.containsKey(sBlock.fingerprint)) {
+                    Set<String> haventConfirmed = new HashSet<String>(members.keySet());
+                    haventConfirmed.remove(client.getUserID()); //remove myself
+                    pendingBlockSeals.put(sBlock.fingerprint, haventConfirmed); // add all users
+                }
+
+                // System.out.printf("Found sealable block with hash %s\n", sBlock.fingerprint);
+                // System.out.printf("Waiting for confirmation from: %s\n",
+                //                            StringUtils.join(pendingBlockSeals.get(sBlock.fingerprint), ","));
+
+                // issue a randomly spaced burst of seal signals to those who still has not confirmed seal
+                SealSignalMessage ssm = new SealSignalMessage(sBlock.fingerprint, client.getUserID(), this.getCliqueName());
+                String toTransmit = encryptAndMac(ssm); // prepare message to transmit
+                Set<String> haventConfirmed = null;
+                synchronized (haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint)) {
+                    // TODO: locking the havent confirmed set for a long while. May hurt performance.
+                    for (String userID: haventConfirmed) {
+                        comm.send(userID, toTransmit); // send
+                        Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
+                    }
+                }
+            }
+
+
         }
 
     }
@@ -106,7 +139,7 @@ public class Clique extends Thread {
 
         if(AddressBook.contains(userID)) {
 
-            Message invMsg = new InviteMessage(members.keySet(), crypto.getPublicKey(),
+            Message invMsg = new InviteMessage(members.keySet(), crypto.getDHPublicKey(),
                                                                                     client.getUserID(), this.name);
 
 
@@ -180,7 +213,7 @@ public class Clique extends Thread {
             String oldAddressTag = getCurrentAddressTag();
 
             // update the common secret with new user's pubkey
-            crypto.acceptPublicKey(newUserPubKey);
+            crypto.acceptDHPublicKey(newUserPubKey);
 
             client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
             client.removeAddressTag(oldAddressTag); // remove the previous address tag
@@ -213,7 +246,7 @@ public class Clique extends Thread {
                 String oldAddressTag = getCurrentAddressTag();
 
                 // update the common secret with new user's pubkey
-                crypto.acceptPublicKey(newUserPubKey);
+                crypto.acceptDHPublicKey(newUserPubKey);
                 client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
                 client.removeAddressTag(oldAddressTag); // remove the previous address tag
 
@@ -224,55 +257,55 @@ public class Clique extends Thread {
             UpdateRequestMessage urm = (UpdateRequestMessage) msg;
             VectorClock otherVC = urm.vectorClk;
 
-            //System.out.printf("Received an UpdateRequestMessage from %s. Their vc:", urm.author);
-            //otherVC.print();
-
             //form a response
             List<TextMessage> missingMsgs = history.getMissingMessages(otherVC);
-
-            /*
-            if(!missingMsgs.isEmpty()) {
-                System.out.printf("missingMsgs:\n");
-                for (TextMessage t : missingMsgs) {
-                    System.out.printf("\t%s\n", t.text);
-                }
-                System.out.println();
-            } */
-
 
             UpdateResponseMessage resp = new UpdateResponseMessage(missingMsgs, client.getUserID(), this.name);
             String toTransmit = encryptAndMac(resp);
             comm.send(urm.author, toTransmit); // reply to the author
-            // System.out.println("Successfully sent an UpdateResponseMessage");
         }
         else if(msg instanceof UpdateResponseMessage) {
             UpdateResponseMessage resp = (UpdateResponseMessage)msg;
-            // System.out.printf("Received an UpdateResponseMessage from %s\n", resp.author);
 
             // verify that this is a legit response to an actually sent request
-            if(!pendingPatchRequests.keySet().contains(resp.author)) {// if I did not send a patch request
-                // System.out.println("Nope, I did not ask this user for an update. Dropping this.");
+            if(!pendingPatchRequests.containsKey(resp.author)) // if I did not send a patch request
                 return; // just ignore this message
-            }
-            else {
-                // System.out.println("Yep, I asked for an update.");
+            else
                 pendingPatchRequests.remove(resp.author); // remove if response is legit
-            }
 
 
             List<TextMessage> missing = resp.missingMessages;
-            /*
-            if(!missing.isEmpty()) {
-                System.out.printf("Missing messages from newly arrived UpdateResponse:\n");
-                for (TextMessage t : missing) {
-                    System.out.printf("\t%s\n", t.text);
-                }
-                System.out.println();
-            } */
-
-
-
             history.insertPatch(missing); // insert into history
+        }
+        else if(msg instanceof SealSignalMessage) {
+            SealSignalMessage ssm = (SealSignalMessage) msg;
+
+            // System.out.printf("Received a SealSignalMessage from %s for block %s\n", ssm.author, ssm.fingerprint);
+
+            Set<String> haventConfirmed = pendingBlockSeals.get(ssm.fingerprint);
+            if (haventConfirmed != null) { // if I've also found this block
+                synchronized (haventConfirmed) {
+                    // reply with my own confirmation
+                    SealSignalMessage mySsm = new SealSignalMessage(ssm.fingerprint, client.getUserID(), getCliqueName());
+                    String toTransmit = encryptAndMac(mySsm); // prepare message
+                    comm.send(ssm.author, toTransmit); // send
+                    // System.out.printf("I know this block and also want to seal it! Sent a response.");
+
+                    // update the set of people who still need to confirm this block
+                    haventConfirmed.remove(ssm.author); // mark this person as having confirmed the block
+                    // System.out.printf("Now waiting for confirmation from: %s\n",
+                    //                                  StringUtils.join(haventConfirmed, ","));
+
+                    if (haventConfirmed.isEmpty()) { // if everyone has confirmed the block now
+                        history.sealNextBlock(members.keySet()); // seal the block
+                        pendingBlockSeals.remove(ssm.fingerprint); // pendingBlockSeals[fingerprint] = null
+                        // System.out.printf("Yay! Block %s sealed and removed!\n", ssm.fingerprint);
+                    }
+                }
+            } else {
+                // System.out.printf("Never seen this block before! Dropping it.");
+                return; // I haven't found this block yet, just drop this message
+            }
         }
         else { // some unknown message type
             return; //just drop it

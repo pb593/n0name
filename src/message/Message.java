@@ -3,11 +3,11 @@ package message;
 import interfaces.JSONizable;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
+import message.sealing.SealSignalMessage;
+import message.sealing.SealResponseMessage;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-import java.io.Serializable;
 
 /**
  *  Base class for all possible types of messages.
@@ -42,6 +42,11 @@ public abstract class Message implements JSONizable {
             return new UpdateRequestMessage(obj);
         else if(msg_type.equals("UpdateResponseMessage"))
             return new UpdateResponseMessage(obj);
+        else if(msg_type.equals("SealSignalMessage"))
+            return new SealSignalMessage(obj);
+        else if(msg_type.equals("SealResponseMessage")) {
+            return new SealResponseMessage(obj);
+        }
         else
             throw new ParseException(0); // msg_type is something unexpected
 

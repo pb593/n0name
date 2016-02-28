@@ -15,21 +15,22 @@ import java.security.*;
 public class Cryptographer {
 
     /* Static constants */
-
+    // Encryption parameters
     public final static Integer encBitLength = 256; // length of key to be used
-
     public final static String encAlgo = "AES"; // algorithm to be used for encryption
-
     public final static String modusOperandi = "CTR/PKCS5Padding";
 
+
+    // MAC parameters
     public final static Integer macByteLength = 32; // length of MACs (in bytes)
-
     public final static String macAlgo = "HmacSHA256"; // algorithm used for MACs
-
     public final static Integer macB64StringLength =
                                     (int) Math.ceil(4.0 * macByteLength / 3.0); // length of Base64-encoded MAC
 
-    // generator and modulo parameters (constant and static)
+    // Message Digest parameters
+    public final static String mdAlgo = "SHA-256";
+
+    // generator and modulo parameters (constant and static) for Diffie-Hellman
     private static final BigInteger P = new BigInteger("733395913193084876972058238006528755331084354587635497632061" +
                                             "057108169926295885215157986778370154055962516657468607138398191305808943" +
                                             "0745371908540233246491");
@@ -41,13 +42,10 @@ public class Cryptographer {
 
     /* Other member variables */
 
-    private final SecureRandom random = new SecureRandom();
-
-    private final Cipher cipher;
-
+    private final SecureRandom random = new SecureRandom(); // secure random number generator
+    private final Cipher cipher; // Cipher object used for encryption and decryption
     private BigInteger secretExp; // the secret exponent (aka 'shared secret')
-
-    SecretKey secretKey; // Java object representing secretExp in encryption / decryption procedures
+    SecretKey secretKey; // Java object derived from the secret exponent above
 
 
     public Cryptographer() {
@@ -71,13 +69,13 @@ public class Cryptographer {
     }
 
 
-    synchronized public BigInteger getPublicKey() {
+    synchronized public BigInteger getDHPublicKey() {
         /* returns pow(G, secretExp) mod P, which is the public key transmitted over the wire */
         return G.modPow(secretExp, P); // return (G ^ secretExp) mod P
 
     }
 
-    synchronized public void acceptPublicKey(BigInteger pubkey){
+    synchronized public void acceptDHPublicKey(BigInteger pubkey){
         /* accepts pubkey sent to us by another participant,
          * exponentiates it with our current secret and updates the secret to the new value */
         BigInteger newSecretExp = pubkey.modPow(secretExp, P); // compute new secret exponent from old one
@@ -89,12 +87,10 @@ public class Cryptographer {
 
                                                                 // re-instantiate the secret key
 
-        // System.out.printf("New secret exponent: %s\n", new String(secretKey.getEncoded()));
-        // TODO: remove in prod version
-
     }
 
     synchronized public String Mac(String input) {
+        /* returns MAC(K, input), base64 encoded, where K is the current secret key*/
 
         Mac macObj = null;
         try {
@@ -182,6 +178,21 @@ public class Cryptographer {
 
         return decrypted;
 
+    }
+
+    public static String digest(String input) {
+        /* Returns secureHash(input) */
+        String digest = null;
+        try {
+            MessageDigest md = MessageDigest.getInstance(mdAlgo);
+            md.update(input.getBytes());
+            digest = Base64.encodeBase64URLSafeString(md.digest());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+
+        return digest;
     }
 
 

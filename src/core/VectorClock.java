@@ -69,6 +69,10 @@ public class VectorClock implements Iterable<String>, JSONizable{
 
     }
 
+    public int size() {
+        return vectorClk.keySet().size();
+    }
+
     @Override
     public Iterator<String> iterator() {
         return vectorClk.keySet().iterator();
