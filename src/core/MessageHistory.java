@@ -141,7 +141,10 @@ public class MessageHistory {
         SealableBlock block = getNextSealableBlock(memberSet);
         if(block != null) { // if there is a sealable block, seal it
             tail = new TreeSet<>(tail.headSet(block.lastMessage(), false));
+            vectorClk = VectorClock.diff(vectorClk, block.vectorClk); // update the vector clock
             blocksSealedCount++;
+
+            vectorClk.print();
         }
     }
 

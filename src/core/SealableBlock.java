@@ -11,12 +11,18 @@ public class SealableBlock {
 
     private final List<TextMessage> block;
     private final Integer blockNumber;
+    public final VectorClock vectorClk = new VectorClock();
     public final String fingerprint;
 
     public SealableBlock(List<TextMessage> block, Integer blockNumber) {
         this.block = block;
         this.blockNumber = blockNumber;
         fingerprint = Cryptographer.digest(this.toString());
+
+        // compute the vc of the block
+        for(TextMessage msg: block) {
+            vectorClk.increment(msg.author);
+        }
     }
 
     public TextMessage lastMessage() {

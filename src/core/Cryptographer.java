@@ -83,30 +83,33 @@ public class Cryptographer {
         secretExp = newSecretExp; // update the secret exponent
 
         byte[] secretExpBytes = secretExp.toByteArray();
-        secretKey = new SecretKeySpec(secretExpBytes, 0, encBitLength / 8, "AES");
+        secretKey = new SecretKeySpec(secretExpBytes, 0, encBitLength / 8, encAlgo);
 
                                                                 // re-instantiate the secret key
+
+    }
+
+    synchronized public void rotateKey(SealableBlock sBlock) {
+        /* updates the shared secret and rotates the key on block seal
+        *       secret <--- MAC(K, secret)
+        *       key <--- MAC(secret, block_contents)
+        * */
+        secretExp = new BigInteger(macBytes(secretExp.toByteArray())); // update the shared secret
+
+        // temporary update for secret key
+        secretKey = new SecretKeySpec(secretExp.toByteArray(), 0, encBitLength / 8, encAlgo);
+        byte[] newSecretKeyBytes = macBytes(sBlock.toString().getBytes());
+
+        // update the secret key properly
+        secretKey = new SecretKeySpec(newSecretKeyBytes, 0, encBitLength / 8, encAlgo);
 
     }
 
     synchronized public String Mac(String input) {
         /* returns MAC(K, input), base64 encoded, where K is the current secret key*/
 
-        Mac macObj = null;
-        try {
-            macObj = Mac.getInstance(macAlgo);
-            macObj.init(secretKey);
-        } catch (NoSuchAlgorithmException e) {
-            System.err.printf("Mac algorithm %s not found\n", macAlgo);
-            e.printStackTrace();
-            System.exit(-1);
-        } catch (InvalidKeyException e) {
-            System.err.println("Attempted to MAC with an invalid key");
-            e.printStackTrace();
-            System.exit(-1);
-        }
-
-        return Base64.encodeBase64URLSafeString(macObj.doFinal(input.getBytes()));
+        byte[] bytes = input.getBytes();
+        return Base64.encodeBase64URLSafeString(macBytes(bytes));
 
     }
 
@@ -177,6 +180,26 @@ public class Cryptographer {
 
 
         return decrypted;
+
+    }
+
+    private byte[] macBytes(byte[] input) {
+
+        Mac macObj = null;
+        try {
+            macObj = Mac.getInstance(macAlgo);
+            macObj.init(secretKey);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.printf("Mac algorithm %s not found\n", macAlgo);
+            e.printStackTrace();
+            System.exit(-1);
+        } catch (InvalidKeyException e) {
+            System.err.println("Attempted to MAC with an invalid key");
+            e.printStackTrace();
+            System.exit(-1);
+        }
+
+        return macObj.doFinal(input);
 
     }
 

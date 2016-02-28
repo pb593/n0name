@@ -54,14 +54,11 @@ public class VectorClock implements Iterable<String>, JSONizable{
         VectorClock result = new VectorClock();
 
         for(String userID: v1.vectorClk.keySet()) {
-            try {
-                Integer n1 = v1.vectorClk.get(userID);
-                Integer n2 = v2.vectorClk.containsKey(userID) ? v2.vectorClk.get(userID) : 0;
+            Integer n1 = v1.vectorClk.get(userID);
+            Integer n2 = v2.vectorClk.containsKey(userID) ? v2.vectorClk.get(userID) : 0;
+
+            if(n1 - n2 != 0)
                 result.vectorClk.put(userID, n1 - n2);
-            }
-            catch(ClassCastException e) {
-                System.err.printf("Exception in vc.diff: %s\n", v2.vectorClk.get(userID).getClass());
-            }
         }
 
         return result;

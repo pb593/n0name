@@ -107,13 +107,26 @@ public class Clique extends Thread {
             // try to find a sealable block
             SealableBlock sBlock = history.getNextSealableBlock(members.keySet());
             if(sBlock != null) { // if found one
-                // TODO: sleeping inside syncronized block...
+                // TODO: sleeping inside synchronized block...
                 synchronized (pendingBlockSeals) {
                     Set<String> haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint);
                     if (haventConfirmed == null) {
                         haventConfirmed = new HashSet<>(members.keySet());
                         haventConfirmed.remove(client.getUserID()); //remove myself
                         pendingBlockSeals.put(sBlock.fingerprint, haventConfirmed); // add all users
+                    }
+
+                    if(haventConfirmed.isEmpty()) { // can seal the block now
+                        history.sealNextBlock(members.keySet()); // seal it!
+                        pendingBlockSeals.remove(sBlock.fingerprint); // remove it from pending hash table
+
+                        /* update the secret and key */
+                        String oldAddressTag = getCurrentAddressTag(); // note the current address tag
+                        crypto.rotateKey(sBlock); // rotate the key
+                        client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
+                        client.removeAddressTag(oldAddressTag); // remove the previous address tag
+
+
                     }
 
                     // System.out.printf("Found sealable block with hash %s\n", sBlock.fingerprint);
@@ -296,11 +309,13 @@ public class Clique extends Thread {
                     // System.out.printf("Now waiting for confirmation from: %s\n",
                     //                                  StringUtils.join(haventConfirmed, ","));
 
+                    /*
                     if (haventConfirmed.isEmpty()) { // if everyone has confirmed the block now
                         history.sealNextBlock(members.keySet()); // seal the block
                         pendingBlockSeals.remove(ssm.fingerprint); // pendingBlockSeals[fingerprint] = null
                         // System.out.printf("Yay! Block %s sealed and removed!\n", ssm.fingerprint);
                     }
+                    */
                 } else {
                     // System.out.printf("Never seen this block before! Dropping it.");
                     return; // I haven't found this block yet, just drop this message
