@@ -23,7 +23,7 @@ public class Cryptographer {
 
     // MAC parameters
     public final static Integer macByteLength = 32; // length of MACs (in bytes)
-    public final static String macAlgo = "HmacSHA256"; // algorithm used for MACs
+    public final static String macAlgo = "HMACSHA256"; // algorithm used for MACs
     public final static Integer macB64StringLength =
                                     (int) Math.ceil(4.0 * macByteLength / 3.0); // length of Base64-encoded MAC
 

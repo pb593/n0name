@@ -143,8 +143,6 @@ public class MessageHistory {
             tail = new TreeSet<>(tail.headSet(block.lastMessage(), false));
             vectorClk = VectorClock.diff(vectorClk, block.vectorClk); // update the vector clock
             blocksSealedCount++;
-
-            vectorClk.print();
         }
     }
 
