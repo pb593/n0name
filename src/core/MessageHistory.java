@@ -139,9 +139,10 @@ public class MessageHistory {
 
     synchronized void sealNextBlock(Set<String> memberSet) {
         SealableBlock block = getNextSealableBlock(memberSet);
-        // block.print();
-        tail = new TreeSet<>(tail.headSet(block.lastMessage(), false));
-        blocksSealedCount++;
+        if(block != null) { // if there is a sealable block, seal it
+            tail = new TreeSet<>(tail.headSet(block.lastMessage(), false));
+            blocksSealedCount++;
+        }
     }
 
     synchronized public int getCurrentLamportTS() {

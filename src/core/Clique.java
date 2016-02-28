@@ -27,7 +27,7 @@ public class Clique extends Thread {
 
     private final HashSet<String> pendingInvites = new HashSet<>(); // users I invited and waiting for response
     private final ConcurrentHashMap<String, Long> pendingPatchRequests = new ConcurrentHashMap<>(); // users I have sent a patch request to
-    private final ConcurrentHashMap<String, Set<String>> pendingBlockSeals = new ConcurrentHashMap<>();
+    private final HashMap<String, Set<String>> pendingBlockSeals = new HashMap<>();
                                 // block fingerprint -> set of users who still need to confirm the sealing operation
 
     public Clique(String name, Client client, Communicator comm) {
@@ -107,23 +107,23 @@ public class Clique extends Thread {
             // try to find a sealable block
             SealableBlock sBlock = history.getNextSealableBlock(members.keySet());
             if(sBlock != null) { // if found one
-                if(!pendingBlockSeals.containsKey(sBlock.fingerprint)) {
-                    Set<String> haventConfirmed = new HashSet<String>(members.keySet());
-                    haventConfirmed.remove(client.getUserID()); //remove myself
-                    pendingBlockSeals.put(sBlock.fingerprint, haventConfirmed); // add all users
-                }
+                // TODO: sleeping inside syncronized block...
+                synchronized (pendingBlockSeals) {
+                    Set<String> haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint);
+                    if (haventConfirmed == null) {
+                        haventConfirmed = new HashSet<>(members.keySet());
+                        haventConfirmed.remove(client.getUserID()); //remove myself
+                        pendingBlockSeals.put(sBlock.fingerprint, haventConfirmed); // add all users
+                    }
 
-                // System.out.printf("Found sealable block with hash %s\n", sBlock.fingerprint);
-                // System.out.printf("Waiting for confirmation from: %s\n",
-                //                            StringUtils.join(pendingBlockSeals.get(sBlock.fingerprint), ","));
+                    // System.out.printf("Found sealable block with hash %s\n", sBlock.fingerprint);
+                    // System.out.printf("Waiting for confirmation from: %s\n",
+                    //                            StringUtils.join(pendingBlockSeals.get(sBlock.fingerprint), ","));
 
-                // issue a randomly spaced burst of seal signals to those who still has not confirmed seal
-                SealSignalMessage ssm = new SealSignalMessage(sBlock.fingerprint, client.getUserID(), this.getCliqueName());
-                String toTransmit = encryptAndMac(ssm); // prepare message to transmit
-                Set<String> haventConfirmed = null;
-                synchronized (haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint)) {
-                    // TODO: locking the havent confirmed set for a long while. May hurt performance.
-                    for (String userID: haventConfirmed) {
+                    // issue a randomly spaced burst of seal signals to those who still has not confirmed seal
+                    SealSignalMessage ssm = new SealSignalMessage(sBlock.fingerprint, client.getUserID(), this.getCliqueName());
+                    String toTransmit = encryptAndMac(ssm); // prepare message to transmit
+                    for (String userID : haventConfirmed) {
                         comm.send(userID, toTransmit); // send
                         Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
                     }
@@ -282,9 +282,8 @@ public class Clique extends Thread {
 
             // System.out.printf("Received a SealSignalMessage from %s for block %s\n", ssm.author, ssm.fingerprint);
 
-            Set<String> haventConfirmed = pendingBlockSeals.get(ssm.fingerprint);
-            if (haventConfirmed != null) { // if I've also found this block
-                synchronized (haventConfirmed) {
+            synchronized (pendingBlockSeals) {
+                if (pendingBlockSeals.containsKey(ssm.fingerprint)) { // if I've also found this block
                     // reply with my own confirmation
                     SealSignalMessage mySsm = new SealSignalMessage(ssm.fingerprint, client.getUserID(), getCliqueName());
                     String toTransmit = encryptAndMac(mySsm); // prepare message
@@ -292,6 +291,7 @@ public class Clique extends Thread {
                     // System.out.printf("I know this block and also want to seal it! Sent a response.");
 
                     // update the set of people who still need to confirm this block
+                    Set<String> haventConfirmed = pendingBlockSeals.get(ssm.fingerprint);
                     haventConfirmed.remove(ssm.author); // mark this person as having confirmed the block
                     // System.out.printf("Now waiting for confirmation from: %s\n",
                     //                                  StringUtils.join(haventConfirmed, ","));
@@ -301,10 +301,10 @@ public class Clique extends Thread {
                         pendingBlockSeals.remove(ssm.fingerprint); // pendingBlockSeals[fingerprint] = null
                         // System.out.printf("Yay! Block %s sealed and removed!\n", ssm.fingerprint);
                     }
+                } else {
+                    // System.out.printf("Never seen this block before! Dropping it.");
+                    return; // I haven't found this block yet, just drop this message
                 }
-            } else {
-                // System.out.printf("Never seen this block before! Dropping it.");
-                return; // I haven't found this block yet, just drop this message
             }
         }
         else { // some unknown message type
