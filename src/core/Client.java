@@ -89,8 +89,8 @@ public class Client implements Runnable {
                     System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
                 }
             }
-            else
-                System.err.printf("Received a message for unknown clique with address tag: %s\n", tag);
+            else // Received a message clique with unknown address tag
+                return; // just drop it
         }
 
     }
