@@ -64,18 +64,10 @@ class Communicator extends Thread {
         }
     };
 
-    private void msgReceived(String datagram) {
+    synchronized private void msgReceived(String datagram) {
+        // synchronized – only one message is being handled at a time
+        client.msgReceived(datagram); // pass the string to Client
 
-        Thread handle = new Thread() {
-            public void run() {
-                client.msgReceived(datagram); // pass the string to Client
-            }
-        };
-        handle.setDaemon(true);
-
-        synchronized (client) {
-            handle.start(); // pass it on to client in a separate thread
-        }
     }
 
     public Communicator(Client client, int port) throws IOException {

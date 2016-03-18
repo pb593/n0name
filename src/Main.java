@@ -1,13 +1,10 @@
 import core.Client;
-import core.Cryptographer;
 import exception.UserIDTakenException;
+import gui.ClientGUI;
 
 import java.util.Scanner;
-import java.util.logging.Logger;
 
 public class Main {
-
-    public final static Logger logger = Logger.getAnonymousLogger();
 
     public static void main(String[] argv) {
 

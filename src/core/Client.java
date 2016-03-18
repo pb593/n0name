@@ -4,6 +4,7 @@ package core; /**
 
 import com.sun.deploy.util.StringUtils;
 import exception.UserIDTakenException;
+import gui.ClientGUI;
 import message.InviteMessage;
 import message.Message;
 import message.TextMessage;
@@ -13,10 +14,7 @@ import scaffolding.Utils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Client implements Runnable {
@@ -26,6 +24,8 @@ public class Client implements Runnable {
     private final ConcurrentHashMap<String, Clique> cliques = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> addressTags = new ConcurrentHashMap<>();
                                                             // for fast lookup addressTag -> cliqueName
+    private final ClientGUI gui = new ClientGUI(this); // GUI instance
+
 
     public Client(String userID) throws UserIDTakenException {
 
@@ -54,6 +54,60 @@ public class Client implements Runnable {
         return this.userID;
     }
 
+    public List<String> getGroupList() {
+        return new ArrayList<>(cliques.keySet());
+    }
+
+    public List<String> getOnlineUsers() {
+        return new ArrayList<>(AddressBook.getAll().keySet());
+    }
+
+    public List<String> getGroupParticipants(String cliqueName) {
+        if (cliques.containsKey(cliqueName))
+            return cliques.get(cliqueName).getUserList();
+        else
+            return new ArrayList<>();
+    }
+
+    public List<TextMessage> getMessageHistory(String cliqueName) {
+        if(cliques.containsKey(cliqueName))
+            return cliques.get(cliqueName).getLastFive();
+        else
+            return new ArrayList<>(); // return empty list
+    }
+
+    public boolean sendMessage(String cliqueName, String txt) {
+        if(cliques.containsKey(cliqueName)) {
+            cliques.get(cliqueName).sendMessage(new TextMessage(txt, this.userID, cliqueName));
+            return true;
+        }
+        else
+            return false;
+
+        // if do not have a clique like this – just drop it
+    }
+
+    public boolean addParticipant(String cliqueName, String newUserID) { // return true if ok an false otherwise
+        if(cliques.containsKey(cliqueName)) {
+            cliques.get(cliqueName).addMember(newUserID);
+            return true;
+        }
+        else
+            return false;
+
+    }
+
+    public boolean createGroup(String newCliqueName) { // return true if group created and false if already exists
+        if(!cliques.containsKey(newCliqueName)) { // no such group exists yet
+            Clique c = new Clique(newCliqueName, this, comm);
+            cliques.put(newCliqueName, c); // insert new clique
+            addressTags.put(c.getCurrentAddressTag(), newCliqueName);
+            c.start(); // patching and sealing component
+            return true;
+        }
+        else // group already exists
+            return false;
+    }
 
     public void msgReceived(String datagramStr) {
         /* Callback received in a dedicated thread from Communicator.
@@ -72,9 +126,11 @@ public class Client implements Runnable {
                 Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
                 cliques.put(msg.cliqueName, c); // put into the clique hashmap
                 c.start(); // patching and sealing component
+                gui.updateContent(); // force GUI to display the new group
             }
             else {
                 cliques.get(msg.cliqueName).messageReceived(msg); // pass the message to clique
+                gui.updateContent(); // force GUI reflect the changes
             }
         }
         else { // encrypted communication
@@ -85,6 +141,7 @@ public class Client implements Runnable {
                 if (cliques.containsKey(cliqueName)) { // if clique is already known to me
                     Clique c = cliques.get(cliqueName);
                     c.datagramReceived(datagramStr); // give callback to the specific clique
+                    gui.updateContent(); // force GUI reflect the changes
                 } else { // never see this clique before and isn't an invitation
                     System.err.printf("Received message for non-existent clique '%s'. Dropping it.\n", cliqueName);
                 }
@@ -129,6 +186,15 @@ public class Client implements Runnable {
         th.setDaemon(true);
         th.start();
 
+        gui.setVisible(true);
+        //cli(); // run the CLI
+
+
+    }
+
+    /* CLI funcs down here */
+
+    private void cli() {
         // CLI starts here
         Scanner scanner = new Scanner(System.in);
         while(true) {
@@ -231,8 +297,6 @@ public class Client implements Runnable {
             }
         }
     }
-
-    /* CLI funcs down here */
 
     private void help() {
         cls();
