@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * Created by pb593 on 11/01/2016.
  */
-public class TextMessage extends Message implements Serializable {
+public class TextMessage extends Message {
 
     public final String text; //message text
     public Integer lamportTime = 0;

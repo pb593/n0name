@@ -47,12 +47,10 @@ public class Clique extends Thread {
         this.client = client;
         this.comm = comm;
 
-        // put all users into the members list (including myself)
+        // put myself into members map
         members.put(client.getUserID(), new User(client.getUserID()));
-        for (String username : invmsg.userList) {
-            members.put(username, new User(username));
-        }
 
+        // form an invite response
         Message invRespMsg = new InviteResponseMessage(true, this.crypto.getDHPublicKey(), client.getUserID(), this.name);
         String toTransmit = "NoNaMe" + invRespMsg.toJSON().toJSONString();
 
@@ -212,6 +210,15 @@ public class Clique extends Thread {
     public void messageReceived(Message msg) {
 
         /* Callback received from Client class */
+        if(msg instanceof MembershipUpdateMessage) { // secure update on group membership after I've been added
+            MembershipUpdateMessage mum = (MembershipUpdateMessage) msg;
+
+            for(String userID: mum.members) {
+                if(!this.members.containsKey(userID)) // if don't have this user yet
+                    this.members.put(userID, new User(userID)); // add them in !
+            }
+
+        }
         if(msg instanceof UserAddedNotificationMessage) { // notification about a new added member
             String newUserID = ((UserAddedNotificationMessage) msg).userID;
             BigInteger newUserPubKey = ((UserAddedNotificationMessage) msg).pubKey;
@@ -255,9 +262,15 @@ public class Clique extends Thread {
 
                 // update the common secret with new user's pubkey
                 crypto.acceptDHPublicKey(newUserPubKey);
+                // rotate the address tags
                 client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
                 client.removeAddressTag(oldAddressTag); // remove the previous address tag
 
+                // give the new user the list of current conversation participants (over secure channel)
+                MembershipUpdateMessage mum = new MembershipUpdateMessage(new ArrayList(members.keySet()),
+                                                                                        client.getUserID(), this.name);
+                String toTransmit = encryptAndMac(mum);
+                comm.send(invrespmsg.author, toTransmit);
 
             }
         }

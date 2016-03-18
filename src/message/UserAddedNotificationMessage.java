@@ -1,15 +1,13 @@
 package message;
 
-import jdk.nashorn.internal.parser.JSONParser;
 import org.json.simple.JSONObject;
 
-import java.io.Serializable;
 import java.math.BigInteger;
 
 /**
  * Created by pb593 on 11/01/2016.
  */
-public class UserAddedNotificationMessage extends Message implements Serializable {
+public class UserAddedNotificationMessage extends Message {
 
     public final String userID;
     public final BigInteger pubKey;

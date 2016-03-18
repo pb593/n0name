@@ -25,6 +25,8 @@ class Communicator extends Thread {
     private final int port;
     private final int id;
 
+    private Object msg_handle_lock = new Object();
+                                            // dummy object to synchronize on to allow one message handling at a time
 
     private final Thread sktserver = new Thread () { // P2P receiver, binds on a port and listens
         @Override
@@ -64,9 +66,11 @@ class Communicator extends Thread {
         }
     };
 
-    synchronized private void msgReceived(String datagram) {
+    private void msgReceived(String datagram) {
         // synchronized – only one message is being handled at a time
-        client.msgReceived(datagram); // pass the string to Client
+        synchronized (msg_handle_lock) {
+            client.msgReceived(datagram); // pass the string to Client
+        }
 
     }
 

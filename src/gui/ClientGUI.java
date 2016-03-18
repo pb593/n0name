@@ -9,10 +9,7 @@ import scaffolding.Utils;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+import java.awt.event.*;
 import java.util.List;
 
 /**
@@ -60,7 +57,7 @@ public class ClientGUI extends JFrame {
             public void actionPerformed(ActionEvent e) { // send button is pressed
                 String selectedGroup = (String) groupList.getSelectedValue();
                 String msgText = inputMsgField.getText();
-                if(!msgText.equals("")) { // if the message is non-empty
+                if(selectedGroup!= null && !msgText.equals("")) { // if the message is non-empty and a group is selected
                     boolean success = client.sendMessage(selectedGroup, msgText); // send
                     inputMsgField.setText(inputMsgField.getToolTipText());
                     if (success)

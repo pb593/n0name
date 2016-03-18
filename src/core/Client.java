@@ -6,6 +6,7 @@ import com.sun.deploy.util.StringUtils;
 import exception.UserIDTakenException;
 import gui.ClientGUI;
 import message.InviteMessage;
+import message.InviteResponseMessage;
 import message.Message;
 import message.TextMessage;
 import org.json.simple.parser.ParseException;
@@ -125,11 +126,11 @@ public class Client implements Runnable {
             }
             if(msg instanceof InviteMessage) { // if somebody added me to this clique
                 Clique c = new Clique(msg.cliqueName, this, comm, (InviteMessage) msg); // cliques are never empty, so do not need checks
-                cliques.put(msg.cliqueName, c); // put into the clique hashmap
+                cliques.put(msg.cliqueName, c); // put into the clique hash map
                 c.start(); // patching and sealing component
                 gui.updateContent(); // force GUI to display the new group
             }
-            else {
+            else { // InviteResponseMessage
                 cliques.get(msg.cliqueName).messageReceived(msg); // pass the message to clique
                 gui.updateContent(); // force GUI reflect the changes
             }

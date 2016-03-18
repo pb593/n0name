@@ -47,6 +47,9 @@ public abstract class Message implements JSONizable {
         else if(msg_type.equals("SealResponseMessage")) {
             return new SealResponseMessage(obj);
         }
+        else if(msg_type.equals("MembershipUpdateMessage")) {
+            return new MembershipUpdateMessage(obj);
+        }
         else
             throw new ParseException(0); // msg_type is something unexpected
 

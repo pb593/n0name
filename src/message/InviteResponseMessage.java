@@ -8,7 +8,7 @@ import java.math.BigInteger;
 /**
  * Created by pb593 on 11/01/2016.
  */
-public class InviteResponseMessage extends Message implements Serializable {
+public class InviteResponseMessage extends Message {
 
     public final boolean isAccept;
     public final BigInteger pubKey;
