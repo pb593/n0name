@@ -24,7 +24,7 @@ public class Client implements Runnable {
     private final ConcurrentHashMap<String, Clique> cliques = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> addressTags = new ConcurrentHashMap<>();
                                                             // for fast lookup addressTag -> cliqueName
-    private final ClientGUI gui = new ClientGUI(this); // GUI instance
+    private final ClientGUI gui; // GUI instance
 
 
     public Client(String userID) throws UserIDTakenException {
@@ -48,6 +48,7 @@ public class Client implements Runnable {
         }
         this.userID = userID;
         comm = commtmp;
+        gui = new ClientGUI(this);
     }
 
     public String getUserID() {

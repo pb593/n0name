@@ -2,10 +2,11 @@ package gui;
 
 import com.sun.deploy.util.StringUtils;
 import core.Client;
+import exception.UserIDTakenException;
 import message.TextMessage;
+import scaffolding.Utils;
 
 import javax.swing.*;
-import javax.swing.event.CaretListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.event.ActionEvent;
@@ -29,7 +30,7 @@ public class ClientGUI extends JFrame {
     private JButton sendButton;
     private JTextArea groupParticipantsField;
     private JButton addParticipantButton;
-    private JTextField searchGroupField;
+    private JTextField userIDField;
     private JButton newGroupButton;
     private JTextField inputMsgField;
     private JPanel rootPanel;
@@ -38,10 +39,12 @@ public class ClientGUI extends JFrame {
         super("NoNaMe Chat");
 
         this.client = client; // reference back to the client instance
+        userIDField.setText(client.getUserID());
 
         setContentPane(rootPanel);
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         groupList.setModel(groupListModel);
 
         groupList.addListSelectionListener(new ListSelectionListener() {
@@ -69,7 +72,6 @@ public class ClientGUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) { // add participant to current group
                 String groupID = (String) groupList.getSelectedValue();
-                System.out.println(groupID);
                 if(groupID != null) {
                     Object[] users = client.getOnlineUsers().toArray();
                     String userID = (String) JOptionPane.showInputDialog(frame,
@@ -166,6 +168,33 @@ public class ClientGUI extends JFrame {
             history.setListData(entries);
         }
 
+    }
+
+    public static void main(String[] args) {
+        Client cl = null;
+        boolean try_again = false;
+        while(true) {
+            String userID = (String) JOptionPane.showInputDialog(
+                                null,
+                                !try_again ? "Please pick a username" : "This username is taken. Please try another one.",
+                                "Pick username",
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                null,
+                                Utils.randomAlphaNumeric(10));
+
+            if(userID == null) // 'Cancel' button pressed
+                System.exit(0); // just exit
+            else { // if a userID has been entered
+                try {
+                    cl = new Client(userID);
+                    break; // exit loop if Client successfully constructed
+                } catch (UserIDTakenException e) {
+                    try_again = true; // flag for window
+                }
+            }
+        }
+        cl.run(); // run the client in the same thread
     }
 
 
