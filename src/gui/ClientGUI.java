@@ -25,12 +25,12 @@ public class ClientGUI extends JFrame {
 
     private JList history;
     private JButton sendButton;
-    private JTextArea groupParticipantsField;
     private JButton addParticipantButton;
     private JTextField userIDField;
     private JButton newGroupButton;
     private JTextField inputMsgField;
     private JPanel rootPanel;
+    private JTextField groupParticipantsField;
 
     public ClientGUI(Client client) {
         super("NoNaMe Chat");

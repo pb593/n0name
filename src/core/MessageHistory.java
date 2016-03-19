@@ -86,6 +86,10 @@ public class MessageHistory {
         return rst;
     }
 
+    synchronized public List<TextMessage> getAll() {
+        return new ArrayList<>(tail.descendingSet());
+    }
+
     synchronized public SealableBlock getNextSealableBlock(Set<String> memberSet) {
 
         if(memberSet.size() > vectorClk.size()) { // if suggested clique size is > number of entries in vectorClk

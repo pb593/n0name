@@ -73,7 +73,7 @@ public class Client implements Runnable {
 
     public List<TextMessage> getMessageHistory(String cliqueName) {
         if(cliques.containsKey(cliqueName))
-            return cliques.get(cliqueName).getLastFive();
+            return cliques.get(cliqueName).getHistory();
         else
             return new ArrayList<>(); // return empty list
     }

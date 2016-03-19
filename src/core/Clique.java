@@ -164,6 +164,10 @@ public class Clique extends Thread {
         return name;
     }
 
+    public List<TextMessage> getHistory() {
+        return history.getAll();
+    }
+
     public List<TextMessage> getLastFive() {
         return history.getLastFive();
     }
