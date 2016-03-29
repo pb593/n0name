@@ -1,5 +1,6 @@
 package core;
 
+import exception.MessengerOfflineException;
 import message.*;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
@@ -143,20 +144,23 @@ public class Clique extends Thread {
 
     public void addMember(String userID) {
 
-        if(AddressBook.contains(userID)) {
+        try {
+            if(AddressBook.contains(userID)) {
 
-            Message invMsg = new InviteMessage(members.keySet(), crypto.getDHPublicKey(),
-                                                                                    client.getUserID(), this.name);
+                Message invMsg = new InviteMessage(members.keySet(), crypto.getDHPublicKey(),
+                                                                                        client.getUserID(), this.name);
 
-
-            String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
-            // send the invite
-            comm.send(userID, toTransmit);
-            // mark invite as pending response
-            pendingInvites.add(userID);
-        }
-        else {
-            System.err.printf("Unable to add user '%s' to group. User is not in address book.\n", userID);
+                String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
+                // send the invite
+                comm.send(userID, toTransmit);
+                // mark invite as pending response
+                pendingInvites.add(userID);
+            }
+            else {
+                System.err.printf("Unable to add user '%s' to group. User is not in address book.\n", userID);
+            }
+        } catch (MessengerOfflineException e) {
+            return; // just return return
         }
     }
 

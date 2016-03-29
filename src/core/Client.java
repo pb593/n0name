@@ -2,13 +2,13 @@ package core; /**
  * Created by pb593 on 19/11/2015.
  */
 
-import com.sun.deploy.util.StringUtils;
+import exception.MessengerOfflineException;
 import exception.UserIDTakenException;
 import gui.ClientGUI;
 import message.InviteMessage;
-import message.InviteResponseMessage;
 import message.Message;
 import message.TextMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.parser.ParseException;
 import scaffolding.AddressBook;
 import scaffolding.Utils;
@@ -28,7 +28,7 @@ public class Client implements Runnable {
     private final ClientGUI gui; // GUI instance
 
 
-    public Client(String userID) throws UserIDTakenException {
+    public Client(String userID) throws UserIDTakenException, MessengerOfflineException {
 
         if(AddressBook.contains(userID)) // userID is already in use
             throw new UserIDTakenException();
@@ -61,7 +61,13 @@ public class Client implements Runnable {
     }
 
     public List<String> getOnlineUsers() {
-        return new ArrayList<>(AddressBook.getAll().keySet());
+        Set<String> users = null;
+        try {
+            users = AddressBook.getAll().keySet();
+        } catch (MessengerOfflineException e) { } // if we are online
+
+
+        return users != null ? new ArrayList<>(users) : new ArrayList<>();
     }
 
     public List<String> getGroupParticipants(String cliqueName) {
@@ -171,16 +177,26 @@ public class Client implements Runnable {
     @Override
     public void run() {
         // main function of Client
-        comm.start(); //start our communicator
 
         // start separate thread to report my address to address server
+        // also, update GUI on whether we are online/offline
         Thread th = new Thread() {
             @Override
             public void run() {
+                while(true) { // external loop – for error handling
+                    try {
+                        AddressBook.init(); // initialize the address book
 
-                while(true) {
-                    AddressBook.checkin(userID, comm.getPort());
-                    Utils.sleep(5000);
+                        while (true) { // check into the book every 5 sec
+                            AddressBook.checkin(userID, comm.getPort());
+                            if(gui != null) gui.setIsOnline(true); // tell gui we are online
+
+                            Utils.sleep(5000);
+                        }
+                    } catch (MessengerOfflineException e) { // messenger is offline
+                        if(gui != null) gui.setIsOnline(false); // tell GUI we are offline
+                        Utils.sleep(10000); // wait for a bit longer, then try to reconnect
+                    }
                 }
 
             }
@@ -188,7 +204,9 @@ public class Client implements Runnable {
         th.setDaemon(true);
         th.start();
 
-        gui.setVisible(true);
+        comm.start(); //start our communicator
+
+        gui.setVisible(true); // run GUI
         //cli(); // run the CLI
 
 
@@ -204,28 +222,34 @@ public class Client implements Runnable {
             System.out.println("NoNaMe Chat\u2122");
 
             // output other members which are currently online
-            HashMap<String, InetSocketAddress> users = AddressBook.getAll();
-            if(users.size() > 0) { // more than one person (me) online
-                System.out.println("Users online:");
-                for(String otherUser: users.keySet()) {
-                    System.out.printf(" - %s\n", otherUser);
+            HashMap<String, InetSocketAddress> users = null;
+            try {
+                users = AddressBook.getAll(); // this could throw MessengerOfflineException
+                if(users.size() > 0) { // more than one person (me) online
+                    System.out.println("Users online:");
+                    for(String otherUser: users.keySet()) {
+                        System.out.printf(" - %s\n", otherUser);
+                    }
                 }
-            }
-            else {
-                System.out.println("None of the other NoNaMe users are currently online.");
+                else {
+                    System.out.println("None of the other NoNaMe users are currently online.");
+                }
+
+                // output which groups I'm currently in
+                if(cliques.keySet().size() > 0) { // if there are any active cliques
+                    System.out.println("Groups:");
+                    for (String cliqueName : cliques.keySet()) {
+                        System.out.printf(" - %s\n", cliqueName);
+                    }
+                }
+                else { // if there are no active cliques
+                    System.out.println("You are not part of any group at the moment.");
+                }
+                System.out.printf("> "); // invitation to type in a command
+            } catch (MessengerOfflineException e) {
+                System.out.println("The messenger is offline at the moment :-(");
             }
 
-            // output which groups I'm currently in
-            if(cliques.keySet().size() > 0) { // if there are any active cliques
-                System.out.println("Groups:");
-                for (String cliqueName : cliques.keySet()) {
-                    System.out.printf(" - %s\n", cliqueName);
-                }
-            }
-            else { // if there are no active cliques
-                System.out.println("You are not part of any group at the moment.");
-            }
-            System.out.printf("> "); // invitation to type in a command
             String str = scanner.nextLine();
             if(str.equals("")) { // REFRESH
                 continue;
@@ -278,14 +302,18 @@ public class Client implements Runnable {
                 if(tokens.length >= 3) {
                     String userID = tokens[1];
                     String groupName = tokens[2];
-                    if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
-                        Clique c = cliques.get(groupName); // get clique with this name
-                        c.addMember(userID); // add user to group
-                        System.out.printf("Successfully added user '%s' to group '%s'\n", userID, groupName);
-                    }
-                    else {
-                        System.out.printf("Group with name '%s' or user with name '%s' does not exist\n", groupName,
-                                userID);
+                    try {
+                        if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
+                            Clique c = cliques.get(groupName); // get clique with this name
+                            c.addMember(userID); // add user to group
+                            System.out.printf("Successfully added user '%s' to group '%s'\n", userID, groupName);
+                        }
+                        else {
+                            System.out.printf("Group with name '%s' or user with name '%s' does not exist\n", groupName,
+                                    userID);
+                        }
+                    } catch (MessengerOfflineException e) {
+                        continue; // just go to the beginning
                     }
                 }
                 else {
@@ -360,14 +388,18 @@ public class Client implements Runnable {
                 String[] tokens = str.split("\\s+"); //split command on whitespace
                 if(tokens.length >= 2) {
                     String userID = tokens[1];
-                    if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
-                        Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
-                        c.addMember(userID); // add user to group
-                        System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getCliqueName());
-                    }
-                    else {
-                        System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
-                                clique.getCliqueName(), userID);
+                    try {
+                        if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
+                            Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
+                            c.addMember(userID); // add user to group
+                            System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getCliqueName());
+                        }
+                        else {
+                            System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
+                                    clique.getCliqueName(), userID);
+                        }
+                    } catch (MessengerOfflineException e) {
+                        return; // go to main menu
                     }
                 }
                 else {

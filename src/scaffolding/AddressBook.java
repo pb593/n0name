@@ -1,5 +1,7 @@
 package scaffolding;
 
+import exception.MessengerOfflineException;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -16,11 +18,17 @@ public class AddressBook {
     private static final Integer REFRESH_RATE = 5; // refresh rate for the book (in seconds)
 
 
-    private static HashMap<String, InetSocketAddress> book = pull();
+    private static HashMap<String, InetSocketAddress> book;
     private static long timeLastUpdate = System.currentTimeMillis();
 
+    synchronized public static void init() throws MessengerOfflineException {
 
-    synchronized public static void checkin(String userID, Integer port) {
+        book = forceRefresh();
+
+    }
+
+
+    synchronized public static void checkin(String userID, Integer port) throws MessengerOfflineException {
 
         String myAddress = null; // get my IP address
         try {
@@ -31,14 +39,14 @@ public class AddressBook {
             return;
         }
         String urlToRead = servUrl + "/check-in/" + userID + "/" + myAddress + "/" + port.toString();
-        HTTPHandler.httpGetRequest(urlToRead); // send a GET request to this URL
+        String response = HTTPHandler.httpGetRequest(urlToRead); // send a GET request to this URL
 
-        // now book has definitely changed, force an update
-        book = pull();
+        // book has definitely changed, force an update
+        book = forceRefresh();
 
     }
 
-    synchronized public static InetSocketAddress lookup(String userID) {
+    synchronized public static InetSocketAddress lookup(String userID) throws MessengerOfflineException {
 
         book = getAll(); // update if necessary
 
@@ -55,7 +63,7 @@ public class AddressBook {
 
     }
 
-    synchronized public static boolean contains(String userID) {
+    synchronized public static boolean contains(String userID) throws MessengerOfflineException {
 
         book = getAll(); // update book if necessary
 
@@ -63,11 +71,11 @@ public class AddressBook {
         return (addr != null);
     }
 
-    synchronized public static HashMap<String, InetSocketAddress> getAll() {
+    synchronized public static HashMap<String, InetSocketAddress> getAll() throws MessengerOfflineException {
 
         long now = System.currentTimeMillis();
         if(now - timeLastUpdate > REFRESH_RATE * 1000) { // book older than 5 seconds
-            book = pull(); // update the book
+            book = forceRefresh(); // update the book
             timeLastUpdate = now; // update the timestamp
         }
 
@@ -75,7 +83,7 @@ public class AddressBook {
 
     }
 
-    private static HashMap<String, InetSocketAddress> pull() {
+    private static HashMap<String, InetSocketAddress> forceRefresh() throws MessengerOfflineException {
 
         HashMap<String, InetSocketAddress> table = new HashMap<>();
 

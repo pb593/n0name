@@ -8,11 +8,15 @@ package core; /**
  *
  */
 
+import exception.MessengerOfflineException;
 import scaffolding.AddressBook;
 import scaffolding.StoreAndForward;
 import scaffolding.Utils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -53,14 +57,19 @@ class Communicator extends Thread {
         @Override
         public void run() {
             while(true) {
-                List<String> jsonLines = StoreAndForward.retrieve(client.getUserID());
-                if(jsonLines == null) {
-                    Utils.sleep(StoreAndForward.SAF_REFRESH_RATE);
-                }
-                else {
-                    for(String l: jsonLines) {
-                        msgReceived(l); // pass to Client in thread-safe way
+                List<String> jsonLines = null;
+                try {
+                    jsonLines = StoreAndForward.retrieve(client.getUserID());
+                    if(jsonLines == null) {
+                        Utils.sleep(StoreAndForward.SAF_REFRESH_RATE);
                     }
+                    else {
+                        for(String l: jsonLines) {
+                            msgReceived(l); // pass to Client in thread-safe way
+                        }
+                    }
+                } catch (MessengerOfflineException e) { // we are offline
+                    Utils.sleep(10000); // wait for longer, then retry
                 }
             }
         }
@@ -90,27 +99,31 @@ class Communicator extends Thread {
 
 
     public synchronized boolean send(String userID, String urlSafeString){
-        InetSocketAddress dest = AddressBook.lookup(userID); // get address of the user
-        if(dest == null) {// user not in address book
-            System.err.print(String.format("Communicator failed to send msg to user %s. User not in address book\n",
-                        userID));
-            return false;
-        }
         try {
-            if(dest.toString().equals("/0.0.0.0:0")) { // address is private -> use store-n-forward
-                boolean ret = StoreAndForward.send(userID, urlSafeString);
-                return ret; // return true if ACKed
+            InetSocketAddress dest = AddressBook.lookup(userID); // get address of the user
+            if (dest == null) {// user not in address book
+                System.err.print(String.format("Communicator failed to send msg to user %s. User not in address book\n",
+                        userID));
+                return false;
             }
-            else {
-                Socket skt = new Socket(dest.getAddress(), dest.getPort());
-                PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
-                writer.println(urlSafeString);
-                return true;
+            try {
+                if (dest.toString().equals("/0.0.0.0:0")) { // address is private -> use store-n-forward
+                    boolean ret = StoreAndForward.send(userID, urlSafeString);
+                    return ret; // return true if ACKed
+                } else {
+                    Socket skt = new Socket(dest.getAddress(), dest.getPort());
+                    PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
+                    writer.println(urlSafeString);
+                    return true;
+                }
+            } catch (IOException e) {
+                System.err.print(String.format("Error sending message to address %s:%d\n",
+                        dest.getHostString(), dest.getPort()));
+                return false;
             }
-        } catch (IOException e) {
-            System.err.print(String.format("Error sending message to address %s:%d\n",
-                    dest.getHostString() , dest.getPort()));
-            return false;
+        }
+        catch(MessengerOfflineException e) { // we are offline
+            return false; // just refuse to send, Clique will have to re-send it later
         }
 
     }

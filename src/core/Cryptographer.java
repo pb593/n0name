@@ -16,7 +16,7 @@ public class Cryptographer {
 
     /* Static constants */
     // Encryption parameters
-    public final static Integer encBitLength = 256; // length of key to be used
+    public final static Integer encBitLength = 128; // length of key to be used
     public final static String encAlgo = "AES"; // algorithm to be used for encryption
     public final static String modusOperandi = "CTR/PKCS5Padding";
 
@@ -28,7 +28,7 @@ public class Cryptographer {
                                     (int) Math.ceil(4.0 * macByteLength / 3.0); // length of Base64-encoded MAC
 
     // Message Digest parameters
-    public final static String mdAlgo = "SHA-256";
+    public final static String mdAlgo = "SHA-256"; // used for hashing contents of sealable blocks
 
     // generator and modulo parameters (constant and static) for Diffie-Hellman
     private static final BigInteger P = new BigInteger("733395913193084876972058238006528755331084354587635497632061" +
@@ -58,9 +58,7 @@ public class Cryptographer {
         Cipher ctemp = null;
         try {
             ctemp = Cipher.getInstance(encAlgo + "/" + modusOperandi);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             e.printStackTrace();
         }
         this.cipher = ctemp; // choose cipher
@@ -92,7 +90,7 @@ public class Cryptographer {
     synchronized public void rotateKey(SealableBlock sBlock) {
         /* updates the shared secret and rotates the key on block seal
         *       secret <--- MAC(K, secret)
-        *       key <--- MAC(secret, block_contents)
+        *       K <--- MAC(secret, block_contents)
         * */
         secretExp = new BigInteger(macBytes(secretExp.toByteArray())); // update the shared secret
 

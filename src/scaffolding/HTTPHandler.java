@@ -1,8 +1,10 @@
 package scaffolding;
 
+import exception.MessengerOfflineException;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -21,7 +23,9 @@ import java.util.List;
  */
 public class HTTPHandler {
 
-    public static String httpGetRequest(String urlToRead) {
+    public static String httpGetRequest(String urlToRead) throws MessengerOfflineException {
+
+            // if unsuccessful – returns null
 
             String result = null;
             try {
@@ -33,6 +37,7 @@ public class HTTPHandler {
                 URL url = new URL(urlToRead);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
+                conn.setReadTimeout(2000); // read timeout at 2 sec
                 BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 String line;
                 while ((line = rd.readLine()) != null) {
@@ -45,18 +50,24 @@ public class HTTPHandler {
 
             }
             catch (IOException e) {
-                System.err.print("Unable to do a HTTP GET request to the address server...");
-                System.exit(-1);
+                //System.err.print("Unable to do a HTTP GET request to the server...");
+                //e.printStackTrace();
+                throw new MessengerOfflineException(); // something went wrong... (mb offline?)
             }
 
             return result;
 
     }
 
-    public static String httpPostRequest(String targetUrl, String msg) {
+    public static String httpPostRequest(String targetUrl, String msg) throws MessengerOfflineException {
+
+        // if unsuccessful – returns null
 
         HttpClient client = HttpClientBuilder.create().build();
         HttpPost post = new HttpPost(targetUrl);
+
+        RequestConfig rc = RequestConfig.custom().setConnectTimeout(2000).build(); // connection times out after 2 sec
+        post.setConfig(rc);
 
         List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
         urlParameters.add(new BasicNameValuePair("msg", msg));
@@ -74,10 +85,10 @@ public class HTTPHandler {
             while ((line = rd.readLine()) != null) {
                 result.append(line);
             }
-        } catch (Exception e) {
-            System.err.print("Unable to do a HTTP POST request to the address server...");
-            e.printStackTrace();
-            System.exit(-1);
+        } catch (IOException e) {
+            //System.err.print("Unable to do a HTTP POST request to the server...");
+            //e.printStackTrace();
+            throw new MessengerOfflineException(); // something went wrong... (mb offline?)
         }
 
 

@@ -1,6 +1,7 @@
 package gui;
 
-import com.sun.deploy.util.StringUtils;
+import exception.MessengerOfflineException;
+import org.apache.commons.lang3.StringUtils;
 import core.Client;
 import exception.UserIDTakenException;
 import message.TextMessage;
@@ -31,6 +32,9 @@ public class ClientGUI extends JFrame {
     private JTextField inputMsgField;
     private JPanel rootPanel;
     private JTextField groupParticipantsField;
+    private JLabel onlineIndicator;
+
+    private ImageIcon[] status_icon = new ImageIcon[2];
 
     public ClientGUI(Client client) {
         super("NoNaMe Chat");
@@ -43,6 +47,12 @@ public class ClientGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         groupList.setModel(groupListModel);
+
+        // load online and offline icons
+        status_icon[1] = new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("online_dot.png"));
+        status_icon[0] = new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("offline_dot.png"));
+
+        onlineIndicator.setIcon(status_icon[1]); // set 'online'
 
         groupList.addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -139,15 +149,16 @@ public class ClientGUI extends JFrame {
 
     public void updateContent() { // this method is used by the client to force the GUI update its content
 
-        List<String> groups = client.getGroupList();
-        for(String g : groups) {
-            if(!groupListModel.contains(g))
+
+        List<String> groups = client.getGroupList(); // fetch all the grousp
+        for (String g : groups) {
+            if (!groupListModel.contains(g))
                 groupListModel.addElement(g);
         }
 
         Object selectedObj = groupList.getSelectedValue();
 
-        if(selectedObj != null) { // if a group is selected, fetch the message history
+        if (selectedObj != null) { // if a group is selected, fetch the message history
 
             String selectedGroup = selectedObj.toString();
 
@@ -158,13 +169,21 @@ public class ClientGUI extends JFrame {
             List<TextMessage> msgs = client.getMessageHistory(selectedGroup);
             String[] entries = new String[msgs.size()];
 
-            for(int i = 0; i < msgs.size(); i++) {
+            for (int i = 0; i < msgs.size(); i++) {
                 entries[i] = String.format("%-20s: %s", msgs.get(i).author, msgs.get(i).text);
             }
 
             history.setListData(entries);
         }
 
+
+    }
+
+    public void setIsOnline(boolean isOnline) { // called by Client to change GUI look depending on net status
+        onlineIndicator.setIcon(status_icon[isOnline ? 1 : 0]); // status icon
+        sendButton.setEnabled(isOnline); // ability to send messages
+        addParticipantButton.setEnabled(isOnline); //  ability to add participants
+        newGroupButton.setEnabled(isOnline); //  ability to create new conversations
     }
 
     public static void main(String[] args) {
@@ -173,7 +192,7 @@ public class ClientGUI extends JFrame {
         while(true) {
             String userID = (String) JOptionPane.showInputDialog(
                                 null,
-                                !try_again ? "Please pick a username" : "This username is taken. Please try another one.",
+                                !try_again ? "Please pick a username" : "This username is invalid/taken. Please try another one.",
                                 "Pick username",
                                 JOptionPane.PLAIN_MESSAGE,
                                 null,
@@ -184,10 +203,19 @@ public class ClientGUI extends JFrame {
                 System.exit(0); // just exit
             else { // if a userID has been entered
                 try {
-                    cl = new Client(userID);
-                    break; // exit loop if Client successfully constructed
+                    if(userID.split("\\s+").length != 1) {// if there were spaces in the userID
+                        try_again = true; // try again
+                    }
+                    else {
+                        cl = new Client(userID);
+                        break; // exit loop if Client successfully constructed
+                    }
                 } catch (UserIDTakenException e) {
                     try_again = true; // flag for window
+                } catch (MessengerOfflineException e) { // we are offline
+                    JOptionPane.showMessageDialog(null,
+                            "You appear to be offline. Connect to network and try again.", "Error",
+                                                                                        JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
