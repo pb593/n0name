@@ -349,6 +349,4 @@ public class Clique extends Thread {
         return cliqueTag;
     }
 
-
-
 }

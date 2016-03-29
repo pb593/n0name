@@ -1,25 +1,29 @@
-package gui;
+package ui;
 
-import exception.MessengerOfflineException;
-import org.apache.commons.lang3.StringUtils;
 import core.Client;
+import core.Clique;
+import exception.MessengerOfflineException;
 import exception.UserIDTakenException;
 import message.TextMessage;
-import scaffolding.Utils;
+import org.apache.commons.lang3.StringUtils;
+import scaffolding.AddressBook;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by pb593 on 17/03/2016.
  */
-public class ClientGUI extends JFrame {
+public class GUIClient extends Client {
 
-    private Client client; // reference back to the Client instance
-    private JFrame frame = this; // for use in action listeners
+    private JFrame frame;
 
     private JList groupList;
     private DefaultListModel<String> groupListModel = new DefaultListModel<>();
@@ -36,15 +40,16 @@ public class ClientGUI extends JFrame {
 
     private ImageIcon[] status_icon = new ImageIcon[2];
 
-    public ClientGUI(Client client) {
-        super("NoNaMe Chat");
+    public GUIClient(String userID) throws UserIDTakenException, MessengerOfflineException {
+        super(userID);
 
-        this.client = client; // reference back to the client instance
-        userIDField.setText(client.getUserID());
+        frame = new JFrame("NoNaMe Chat");
 
-        setContentPane(rootPanel);
-        pack();
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        userIDField.setText(userID);
+
+        frame.setContentPane(rootPanel);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         groupList.setModel(groupListModel);
 
@@ -67,11 +72,10 @@ public class ClientGUI extends JFrame {
             public void actionPerformed(ActionEvent e) { // send button is pressed
                 String selectedGroup = (String) groupList.getSelectedValue();
                 String msgText = inputMsgField.getText();
-                if(selectedGroup!= null && !msgText.equals("")) { // if the message is non-empty and a group is selected
-                    boolean success = client.sendMessage(selectedGroup, msgText); // send
+                if(selectedGroup!= null && !msgText.equals("") && cliques.containsKey(selectedGroup)) { // if the message is non-empty and a group is selected
+                    cliques.get(selectedGroup).sendMessage(new TextMessage(msgText, userID, selectedGroup));
                     inputMsgField.setText(inputMsgField.getToolTipText());
-                    if (success)
-                        updateContent(); // refresh GUI
+                    updateContent(); // refresh GUI
                 }
             }
         });
@@ -80,20 +84,28 @@ public class ClientGUI extends JFrame {
             public void actionPerformed(ActionEvent e) { // add participant to current group
                 String groupID = (String) groupList.getSelectedValue();
                 if(groupID != null) {
-                    Object[] users = client.getOnlineUsers().toArray();
-                    String userID = (String) JOptionPane.showInputDialog(frame,
-                            "Please choose the user you would like to add...",
-                            "Add a conversation participant",
-                            JOptionPane.QUESTION_MESSAGE,
-                            null,
-                            users,
-                            "select user...");
+                    Object[] users = new Object[0];
+                    try {
+                        users = AddressBook.getAll().keySet().toArray();
+                        String userID = (String) JOptionPane.showInputDialog(frame,
+                                "Please choose the user you would like to add...",
+                                "Add a conversation participant",
+                                JOptionPane.QUESTION_MESSAGE,
+                                null,
+                                users,
+                                "select user...");
 
-                    if(userID != null) { // if user did not press 'Cancel'
-                        boolean success = client.addParticipant(groupID, userID); // request Client to add the corresponding user
-
-                        if (success)
+                        if(userID != null && cliques.containsKey(groupID)) { // if user did not press 'Cancel' and group is known
+                            cliques.get(groupID).addMember(userID);
                             updateContent(); // refresh
+                        }
+                    }
+                    catch (MessengerOfflineException e1) { // messenger goes offline exactly when user typed in groupID
+                        setIsOnline(false); // switch to offline mode
+                        JOptionPane.showMessageDialog(null,
+                                "You appear to be offline. Check your network connection and try again", "Error",
+                                                JOptionPane.ERROR_MESSAGE); // give error msg to user
+                        // return
                     }
                 }
             }
@@ -110,15 +122,17 @@ public class ClientGUI extends JFrame {
                         null);
 
                 if (newGroupID != null) { // if user did not press 'Cancel'
-                    if (newGroupID.equals("") || client.getGroupList().contains(newGroupID)) // if invalid group
+                    if (newGroupID.equals("") || cliques.containsKey(newGroupID)) // if invalid group
                         JOptionPane.showMessageDialog(frame,
                                 "Invalid group name or this group already exists",
                                 "Something went wrong",
                                 JOptionPane.WARNING_MESSAGE);
                     else {
-                        boolean success = client.createGroup(newGroupID); // request creation of a new group
-                        if (success)
-                            updateContent(); // refresh
+                        Clique c = new Clique(newGroupID, myself, comm);
+                        cliques.put(newGroupID, c); // insert new clique
+                        addressTags.put(c.getCurrentAddressTag(), newGroupID);
+                        c.start(); // patching and sealing component
+                        updateContent(); // refresh
                     }
                 }
             }
@@ -147,10 +161,11 @@ public class ClientGUI extends JFrame {
         });
     }
 
-    public void updateContent() { // this method is used by the client to force the GUI update its content
+    @Override
+    protected void updateContent() { // this method is used by the client to force the GUI update its content
 
 
-        List<String> groups = client.getGroupList(); // fetch all the grousp
+        Set<String> groups = cliques.keySet(); // fetch all the grousp
         for (String g : groups) {
             if (!groupListModel.contains(g))
                 groupListModel.addElement(g);
@@ -163,10 +178,10 @@ public class ClientGUI extends JFrame {
             String selectedGroup = selectedObj.toString();
 
             // update participants field
-            groupParticipantsField.setText(StringUtils.join(client.getGroupParticipants(selectedGroup), ", "));
+            groupParticipantsField.setText(StringUtils.join(cliques.get(selectedGroup).getUserList(), ", "));
 
             // update message history
-            List<TextMessage> msgs = client.getMessageHistory(selectedGroup);
+            List<TextMessage> msgs = cliques.get(selectedGroup).getHistory();
             String[] entries = new String[msgs.size()];
 
             for (int i = 0; i < msgs.size(); i++) {
@@ -176,51 +191,20 @@ public class ClientGUI extends JFrame {
             history.setListData(entries);
         }
 
-
     }
 
-    public void setIsOnline(boolean isOnline) { // called by Client to change GUI look depending on net status
+    @Override
+    protected void setIsOnline(boolean isOnline) { // called by Client to change GUI look depending on net status
         onlineIndicator.setIcon(status_icon[isOnline ? 1 : 0]); // status icon
         sendButton.setEnabled(isOnline); // ability to send messages
         addParticipantButton.setEnabled(isOnline); //  ability to add participants
         newGroupButton.setEnabled(isOnline); //  ability to create new conversations
     }
 
-    public static void main(String[] args) {
-        Client cl = null;
-        boolean try_again = false;
-        while(true) {
-            String userID = (String) JOptionPane.showInputDialog(
-                                null,
-                                !try_again ? "Please pick a username" : "This username is invalid/taken. Please try another one.",
-                                "Pick username",
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                null,
-                                Utils.randomAlphaNumeric(10));
 
-            if(userID == null) // 'Cancel' button pressed
-                System.exit(0); // just exit
-            else { // if a userID has been entered
-                try {
-                    if(userID.split("\\s+").length != 1) {// if there were spaces in the userID
-                        try_again = true; // try again
-                    }
-                    else {
-                        cl = new Client(userID);
-                        break; // exit loop if Client successfully constructed
-                    }
-                } catch (UserIDTakenException e) {
-                    try_again = true; // flag for window
-                } catch (MessengerOfflineException e) { // we are offline
-                    JOptionPane.showMessageDialog(null,
-                            "You appear to be offline. Connect to network and try again.", "Error",
-                                                                                        JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        }
-        cl.run(); // run the client in the same thread
+    @Override
+    public void run() {
+        super.run();
+        frame.setVisible(true); // set myself visible to the user
     }
-
-
 }
