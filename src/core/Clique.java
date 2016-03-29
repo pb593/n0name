@@ -142,26 +142,25 @@ public class Clique extends Thread {
 
     }
 
-    public void addMember(String userID) {
+    public boolean addMember(String userID) {
 
-        try {
-            if(AddressBook.contains(userID)) {
+        if(AddressBook.contains(userID)) {
 
-                Message invMsg = new InviteMessage(members.keySet(), crypto.getDHPublicKey(),
-                                                                                        client.getUserID(), this.name);
+            Message invMsg = new InviteMessage(members.keySet(), crypto.getDHPublicKey(),
+                    client.getUserID(), this.name);
 
-                String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
-                // send the invite
-                comm.send(userID, toTransmit);
-                // mark invite as pending response
+            String toTransmit = "NoNaMe" + invMsg.toJSON().toJSONString();
+
+            // send the invite
+            boolean success = comm.send(userID, toTransmit);
+
+            // if successfully mark invite as pending response
+            if (success) {
                 pendingInvites.add(userID);
+                return true;
             }
-            else {
-                System.err.printf("Unable to add user '%s' to group. User is not in address book.\n", userID);
-            }
-        } catch (MessengerOfflineException e) {
-            return; // just return return
         }
+        return false;
     }
 
     public String getCliqueName() {
@@ -182,20 +181,11 @@ public class Clique extends Thread {
 
     }
 
-    public void sendMessage(Message msg) {
+    public void sendMessage(TextMessage txtMsg) {
         /* Send message to the whole clique (including myself) */
+        timestamp(txtMsg); // timestamp the message
+        history.insertMyNewMessage(txtMsg);
 
-        if(msg instanceof TextMessage) {
-            TextMessage txtMsg = (TextMessage) msg;
-            timestamp(txtMsg); // timestamp the message
-            history.insertMyNewMessage(txtMsg);
-        }
-        else {
-            for (String userID : members.keySet()) {
-                String toTransmit = encryptAndMac(msg);
-                comm.send(userID, toTransmit);
-            }
-        }
     }
 
     public void datagramReceived(String datagram) {

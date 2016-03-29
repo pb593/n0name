@@ -8,7 +8,10 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 
 /**
- * Created by pb593 on 20/12/2015.
+ *
+ * Thread-safe implementation of online address book.
+ * Could return stale info. It definitely will if we go offline.
+ *
  */
 
 public class AddressBook {
@@ -39,31 +42,22 @@ public class AddressBook {
             return;
         }
         String urlToRead = servUrl + "/check-in/" + userID + "/" + myAddress + "/" + port.toString();
-        String response = HTTPHandler.httpGetRequest(urlToRead); // send a GET request to this URL
+        HTTPHandler.httpGetRequest(urlToRead); // send a GET request to this URL
 
         // book has definitely changed, force an update
         book = forceRefresh();
 
     }
 
-    synchronized public static InetSocketAddress lookup(String userID) throws MessengerOfflineException {
+    synchronized public static InetSocketAddress lookup(String userID) {
 
         book = getAll(); // update if necessary
 
-        String urlToRead = servUrl + "/lookup/" + userID;
-        String response = HTTPHandler.httpGetRequest(urlToRead);
-
-        if(response.equals("None")) // userID not present in the book
-            return null;
-        else { // address is here
-            String[] tokens = response.split(":");
-            InetSocketAddress addr = new InetSocketAddress(tokens[0], Integer.parseInt(tokens[1])); // error handling?
-            return addr;
-        }
+        return book.get(userID); // return answer from the book
 
     }
 
-    synchronized public static boolean contains(String userID) throws MessengerOfflineException {
+    synchronized public static boolean contains(String userID) {
 
         book = getAll(); // update book if necessary
 
@@ -71,12 +65,17 @@ public class AddressBook {
         return (addr != null);
     }
 
-    synchronized public static HashMap<String, InetSocketAddress> getAll() throws MessengerOfflineException {
+    synchronized public static HashMap<String, InetSocketAddress> getAll() {
 
         long now = System.currentTimeMillis();
         if(now - timeLastUpdate > REFRESH_RATE * 1000) { // book older than 5 seconds
-            book = forceRefresh(); // update the book
-            timeLastUpdate = now; // update the timestamp
+            try {
+                HashMap<String, InetSocketAddress> newbook = forceRefresh();
+                book =  newbook; // update the book
+                timeLastUpdate = now; // update the timestamp
+            } catch (MessengerOfflineException e) { // can't get the data from server, since we are offline
+                // fine, the data in our book will be stale for now...
+            }
         }
 
         return book;

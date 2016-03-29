@@ -72,7 +72,8 @@ public class GUIClient extends Client {
             public void actionPerformed(ActionEvent e) { // send button is pressed
                 String selectedGroup = (String) groupList.getSelectedValue();
                 String msgText = inputMsgField.getText();
-                if(selectedGroup!= null && !msgText.equals("") && cliques.containsKey(selectedGroup)) { // if the message is non-empty and a group is selected
+                if(selectedGroup!= null && !msgText.equals("") && cliques.containsKey(selectedGroup)) {
+                    // if the message is non-empty and a group is selected and known
                     cliques.get(selectedGroup).sendMessage(new TextMessage(msgText, userID, selectedGroup));
                     inputMsgField.setText(inputMsgField.getToolTipText());
                     updateContent(); // refresh GUI
@@ -84,28 +85,18 @@ public class GUIClient extends Client {
             public void actionPerformed(ActionEvent e) { // add participant to current group
                 String groupID = (String) groupList.getSelectedValue();
                 if(groupID != null) {
-                    Object[] users = new Object[0];
-                    try {
-                        users = AddressBook.getAll().keySet().toArray();
-                        String userID = (String) JOptionPane.showInputDialog(frame,
-                                "Please choose the user you would like to add...",
-                                "Add a conversation participant",
-                                JOptionPane.QUESTION_MESSAGE,
-                                null,
-                                users,
-                                "select user...");
+                    Object[] users = AddressBook.getAll().keySet().toArray();
+                    String userID = (String) JOptionPane.showInputDialog(frame,
+                            "Please choose the user you would like to add...",
+                            "Add a conversation participant",
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            users,
+                            "select user...");
 
-                        if(userID != null && cliques.containsKey(groupID)) { // if user did not press 'Cancel' and group is known
-                            cliques.get(groupID).addMember(userID);
-                            updateContent(); // refresh
-                        }
-                    }
-                    catch (MessengerOfflineException e1) { // messenger goes offline exactly when user typed in groupID
-                        setIsOnline(false); // switch to offline mode
-                        JOptionPane.showMessageDialog(null,
-                                "You appear to be offline. Check your network connection and try again", "Error",
-                                                JOptionPane.ERROR_MESSAGE); // give error msg to user
-                        // return
+                    if(userID != null && cliques.containsKey(groupID)) { // if user did not press 'Cancel' and group is known
+                        boolean success = cliques.get(groupID).addMember(userID);
+                        if(success) updateContent(); // refresh GUI
                     }
                 }
             }
@@ -196,7 +187,6 @@ public class GUIClient extends Client {
     @Override
     protected void setIsOnline(boolean isOnline) { // called by Client to change GUI look depending on net status
         onlineIndicator.setIcon(status_icon[isOnline ? 1 : 0]); // status icon
-        sendButton.setEnabled(isOnline); // ability to send messages
         addParticipantButton.setEnabled(isOnline); //  ability to add participants
         newGroupButton.setEnabled(isOnline); //  ability to create new conversations
     }

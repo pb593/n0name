@@ -6,7 +6,6 @@ import exception.MessengerOfflineException;
 import exception.UserIDTakenException;
 import message.InviteMessage;
 import message.Message;
-import message.TextMessage;
 import org.json.simple.parser.ParseException;
 import scaffolding.AddressBook;
 import scaffolding.Utils;
@@ -15,7 +14,8 @@ import ui.GUIClient;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.Random;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 abstract public class Client implements Runnable {
@@ -36,8 +36,22 @@ abstract public class Client implements Runnable {
         // main function of the client
 
         // first, whether user wants a GUI or a CLI
-        boolean isCLI = argv.length >= 1 && argv[1].equals("-cli");
+        boolean isCLI = (argv.length >= 1 && argv[0].equals("-cli"));
 
+        // try to reach out to address book
+        try {
+            AddressBook.init(); // initialize the address book
+        } catch (MessengerOfflineException e) { // if we are offline
+            if(isCLI) { // CLI mode
+                System.out.println("You seem to be offline. Check you network connection and restart application");
+            }
+            else { // GUI mode
+                JOptionPane.showMessageDialog(null,
+                        "You seem to be offline. Check you network connection and restart application", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+            System.exit(-1);
+        }
 
         Client cl = null;
         Scanner scanner = new Scanner(System.in);
@@ -111,8 +125,6 @@ abstract public class Client implements Runnable {
             public void run() {
                 while(true) { // external loop – for error handling
                     try {
-                        AddressBook.init(); // initialize the address book
-
                         while (true) { // check into the book every 5 sec
                             AddressBook.checkin(userID, comm.getPort());
                             myself.setIsOnline(true); // tell gui we are online

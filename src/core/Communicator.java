@@ -110,7 +110,7 @@ class Communicator extends Thread {
                 if (dest.toString().equals("/0.0.0.0:0")) { // address is private -> use store-n-forward
                     boolean ret = StoreAndForward.send(userID, urlSafeString);
                     return ret; // return true if ACKed
-                } else {
+                } else { // if address is public -> initialte direct tcp connection
                     Socket skt = new Socket(dest.getAddress(), dest.getPort());
                     PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
                     writer.println(urlSafeString);
@@ -123,7 +123,7 @@ class Communicator extends Thread {
             }
         }
         catch(MessengerOfflineException e) { // we are offline
-            return false; // just refuse to send, Clique will have to re-send it later
+            return false; // just refuse to send, tell Clique transmission unsuccessful
         }
 
     }

@@ -19,6 +19,9 @@ import java.util.Scanner;
  */
 public class CLIClient extends Client {
 
+    private boolean isOnline = true;
+    private final Object isOnlineLock = new Object(); // dummy object to sync on when accessing isOnline
+
     public CLIClient(String userID) throws UserIDTakenException, MessengerOfflineException {
         super(userID);
     }
@@ -37,36 +40,34 @@ public class CLIClient extends Client {
 
         while(true) {
             cls(); // clear screen
-            System.out.println("NoNaMe Chat\u2122");
+            synchronized (isOnlineLock) {
+                System.out.println("NoNaMe Chat\u2122 " + (this.isOnline ? "" : "[offline]"));
+            }
 
             // output other members which are currently online
             HashMap<String, InetSocketAddress> users = null;
-            try {
-                users = AddressBook.getAll(); // this could throw MessengerOfflineException
-                if(users.size() > 0) { // more than one person (me) online
-                    System.out.println("Users online:");
-                    for(String otherUser: users.keySet()) {
-                        System.out.printf(" - %s\n", otherUser);
-                    }
+            users = AddressBook.getAll(); // this could throw MessengerOfflineException
+            if(users.size() > 0) { // more than one person (me) online
+                System.out.println("Users online:");
+                for(String otherUser: users.keySet()) {
+                    System.out.printf(" - %s\n", otherUser);
                 }
-                else {
-                    System.out.println("None of the other NoNaMe users are currently online.");
-                }
-
-                // output which groups I'm currently in
-                if(cliques.keySet().size() > 0) { // if there are any active cliques
-                    System.out.println("Groups:");
-                    for (String cliqueName : cliques.keySet()) {
-                        System.out.printf(" - %s\n", cliqueName);
-                    }
-                }
-                else { // if there are no active cliques
-                    System.out.println("You are not part of any group at the moment.");
-                }
-                System.out.printf("> "); // invitation to type in a command
-            } catch (MessengerOfflineException e) {
-                System.out.println("The messenger is offline at the moment :-(");
             }
+            else {
+                System.out.println("None of the other NoNaMe users are currently online.");
+            }
+
+            // output which groups I'm currently in
+            if(cliques.keySet().size() > 0) { // if there are any active cliques
+                System.out.println("Groups:");
+                for (String cliqueName : cliques.keySet()) {
+                    System.out.printf(" - %s\n", cliqueName);
+                }
+            }
+            else { // if there are no active cliques
+                System.out.println("You are not part of any group at the moment.");
+            }
+            System.out.printf("> "); // invitation to type in a command
 
             String str = scanner.nextLine();
             if(str.equals("")) { // REFRESH
@@ -120,18 +121,18 @@ public class CLIClient extends Client {
                 if(tokens.length >= 3) {
                     String userID = tokens[1];
                     String groupName = tokens[2];
-                    try {
-                        if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
-                            Clique c = cliques.get(groupName); // get clique with this name
-                            c.addMember(userID); // add user to group
+                    if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
+                        Clique c = cliques.get(groupName); // get clique with this name
+                        boolean success = c.addMember(userID); // add user to group
+                        if(success)
                             System.out.printf("Successfully added user '%s' to group '%s'\n", userID, groupName);
-                        }
-                        else {
-                            System.out.printf("Group with name '%s' or user with name '%s' does not exist\n", groupName,
-                                    userID);
-                        }
-                    } catch (MessengerOfflineException e) {
-                        continue; // just go to the beginning
+                        else
+                            System.err.printf("Unable to add user '%s' to group." +
+                                    "Unable to reach them with an invitation message.", userID);
+                    }
+                    else {
+                        System.out.printf("Group with name '%s' or user with name '%s' does not exist\n", groupName,
+                                userID);
                     }
                 }
                 else {
@@ -174,7 +175,9 @@ public class CLIClient extends Client {
         Scanner scanner = new Scanner(System.in);
         while(true) {
             cls();
-            System.out.printf("Group Name: %s\n", clique.getCliqueName());
+            synchronized (isOnlineLock) {
+                System.out.printf("Group Name: %s%s\n ", clique.getCliqueName(), isOnline ? "" : " [offline]");
+            }
             System.out.printf("Members: %s\n", StringUtils.join(clique.getUserList(), ", "));
             List<TextMessage> last5 = clique.getLastFive();
             if(last5.size() > 0) {
@@ -206,18 +209,19 @@ public class CLIClient extends Client {
                 String[] tokens = str.split("\\s+"); //split command on whitespace
                 if(tokens.length >= 2) {
                     String userID = tokens[1];
-                    try {
-                        if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
-                            Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
-                            c.addMember(userID); // add user to group
-                            System.out.printf("Successfully added user '%s' to group '%s'\n", userID, clique.getCliqueName());
-                        }
-                        else {
-                            System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
-                                    clique.getCliqueName(), userID);
-                        }
-                    } catch (MessengerOfflineException e) {
-                        return; // go to main menu
+                    if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
+                        Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
+                        boolean success = c.addMember(userID); // add user to group
+                        if(success)
+                            System.out.printf("Successfully added user '%s' to group '%s'\n",
+                                                                                userID, clique.getCliqueName());
+                        else
+                            System.err.printf("Unable to add user '%s' to group." +
+                                    "Unable to reach them with an invitation message.", userID);
+                    }
+                    else {
+                        System.out.printf("Group with name '%s' or user with name '%s' does not exist\n",
+                                clique.getCliqueName(), userID);
                     }
                 }
                 else {
@@ -241,7 +245,9 @@ public class CLIClient extends Client {
     @Override
     protected void setIsOnline(boolean isOnline) {
         // CLI is not real-time, so it just gives notification to user about offline status when they hit 'RETRUN'
-        return; // doing nothing
+        synchronized (isOnlineLock) {
+            this.isOnline = isOnline; // update status
+        }
     }
 
 }
