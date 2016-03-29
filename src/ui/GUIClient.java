@@ -4,6 +4,8 @@ import core.Client;
 import core.Clique;
 import exception.MessengerOfflineException;
 import exception.UserIDTakenException;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import message.TextMessage;
 import org.apache.commons.lang3.StringUtils;
 import scaffolding.AddressBook;
@@ -37,6 +39,7 @@ public class GUIClient extends Client {
     private JPanel rootPanel;
     private JTextField groupParticipantsField;
     private JLabel onlineIndicator;
+    private JScrollPane historyScrollPane;
 
     private ImageIcon[] status_icon = new ImageIcon[2];
 
@@ -58,6 +61,8 @@ public class GUIClient extends Client {
         status_icon[0] = new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("offline_dot.png"));
 
         onlineIndicator.setIcon(status_icon[1]); // set 'online'
+
+        new javafx.embed.swing.JFXPanel(); // forces JavaFX init
 
         groupList.addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -152,15 +157,26 @@ public class GUIClient extends Client {
         });
     }
 
+    private void playSound() {
+        Media icq = new Media(Thread.currentThread().getContextClassLoader().getResource("sound.mp3").toString());
+        MediaPlayer mp = new MediaPlayer(icq);
+        mp.play();
+    }
+
     @Override
     protected void updateContent() { // this method is used by the client to force the GUI update its content
 
-
-        Set<String> groups = cliques.keySet(); // fetch all the grousp
-        for (String g : groups) {
+        // add all missing items
+        for (String g : cliques.keySet()) {
             if (!groupListModel.contains(g))
                 groupListModel.addElement(g);
+
+            if(cliques.get(g).tapNewMessagesAvailable()) { // if have new messages
+                playSound(); // produce annoying sound
+            }
         }
+
+        // TODO: remove all redundant items (deleted groups etc)
 
         Object selectedObj = groupList.getSelectedValue();
 
@@ -180,6 +196,10 @@ public class GUIClient extends Client {
             }
 
             history.setListData(entries);
+
+
+            historyScrollPane.getVerticalScrollBar().setValue(historyScrollPane.getVerticalScrollBar().getMaximum());
+            // scroll all the way down
         }
 
     }

@@ -31,6 +31,10 @@ public class Clique extends Thread {
     private final HashMap<String, Set<String>> pendingBlockSeals = new HashMap<>();
                                 // block fingerprint -> set of users who still need to confirm the sealing operation
 
+
+    private boolean newMsgsAvailable = false;
+    private Object newMsgsAvailLock = new Object(); // dummy object to protect the flag
+
     public Clique(String name, Client client, Communicator comm) {
         this.name = name;
         this.client = client;
@@ -337,6 +341,10 @@ public class Clique extends Thread {
     public String getCurrentAddressTag() {
         String cliqueTag = crypto.Mac(this.name);
         return cliqueTag;
+    }
+
+    public boolean tapNewMessagesAvailable() {
+        return history.tapNewMsgsAvailable();
     }
 
 }

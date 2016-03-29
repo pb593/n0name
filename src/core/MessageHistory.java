@@ -17,6 +17,8 @@ public class MessageHistory {
     private Integer lamportTimestamp = 0;
     private Integer blocksSealedCount = 0;
 
+    private boolean newMsgsAvailable = false; // history contains unread messages
+
     synchronized public void insertMyNewMessage(TextMessage txtMsg) {
 
         if(!tail.contains(txtMsg)) { // if msg is not already present in history
@@ -38,6 +40,7 @@ public class MessageHistory {
         for(TextMessage txtMsg: c) {
             if(!tail.contains(txtMsg)) {
                 tail.add(txtMsg);
+                newMsgsAvailable = true; // mark history as containing new messages
                 vectorClk.increment(txtMsg.author);
                 if(txtMsg.lamportTime > maxTS) maxTS = txtMsg.lamportTime;
             }
@@ -160,6 +163,12 @@ public class MessageHistory {
 
     synchronized public Integer size() {
         return tail.size();
+    }
+
+    synchronized public boolean tapNewMsgsAvailable() { // returns flag value and sets it to false
+        boolean old = newMsgsAvailable; // true if msg arrived in last 3 sec
+        newMsgsAvailable = false;
+        return old;
     }
 
 }
