@@ -18,7 +18,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by pb593 on 17/03/2016.
