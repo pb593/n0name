@@ -95,9 +95,10 @@ public class MessageHistory {
 
     synchronized public SealableBlock getNextSealableBlock(Set<String> memberSet) {
 
-        if(memberSet.size() > vectorClk.size()) { // if suggested clique size is > number of entries in vectorClk
+        if(memberSet.size() > vectorClk.size()) // if suggested clique size is > number of entries in vectorClk
             return null;
-        }
+        else if(memberSet.size() == 1) // sealing does not make sense if I'm alone
+            return null;
 
         // STAGE 1: Caclulate the sealable set
         HashSet<String> authorsToBeSeen = new HashSet<>(memberSet); // users we have not seen yet on the iteration
