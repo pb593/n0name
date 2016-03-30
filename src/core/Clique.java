@@ -5,6 +5,7 @@ import message.*;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
 import message.sealing.SealSignalMessage;
+import org.apache.commons.lang3.StringUtils;
 import scaffolding.AddressBook;
 import scaffolding.Utils;
 
@@ -214,6 +215,7 @@ public class Clique extends Thread {
         /* Callback received from Client class */
         if(msg instanceof MembershipUpdateMessage) { // secure update on group membership after I've been added
             MembershipUpdateMessage mum = (MembershipUpdateMessage) msg;
+            System.out.println("Membership update: " + StringUtils.join(mum.members, ", "));
 
             for(String userID: mum.members) {
                 if(!this.members.containsKey(userID)) // if don't have this user yet
@@ -227,6 +229,11 @@ public class Clique extends Thread {
 
             members.put(newUserID, new User(newUserID)); // insert the new user into members hashmap
 
+            // restart all sealing activities for the transcript
+            synchronized (pendingBlockSeals) {
+                pendingBlockSeals.clear(); // all sealing done up to now is irrelevant - we have new participant
+            }
+
             String oldAddressTag = getCurrentAddressTag();
 
             // update the common secret with new user's pubkey
@@ -234,6 +241,8 @@ public class Clique extends Thread {
 
             client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
             client.removeAddressTag(oldAddressTag); // remove the previous address tag
+
+            System.out.println("UserAddedNotification: " + newUserID);
         }
         else if(msg instanceof InviteResponseMessage) { // response to an InviteMessage sent by me earlier
             boolean isValid = pendingInvites.contains(msg.author); // check if I actually invited this person
@@ -245,20 +254,20 @@ public class Clique extends Thread {
                 String newUserID = invrespmsg.author;
                 BigInteger newUserPubKey = invrespmsg.pubKey;
 
-                // notify everyone else in clique (except myself) about new user
+                // notify everyone else in clique (except myself and new guy) about new user
+                String toTransmit = encryptAndMac(new UserAddedNotificationMessage(newUserID,
+                                                                        newUserPubKey, client.getUserID(), this.name));
                 for(String peer: members.keySet()) {
-
-                    if(!peer.equals(this.client.getUserID())) {
-                        String toTransmit =
-                                encryptAndMac(new UserAddedNotificationMessage(newUserID,
-                                                                    newUserPubKey, client.getUserID(), this.name));
+                    if(!peer.equals(this.client.getUserID()))
                         comm.send(peer, toTransmit);
-
-                    }
-
                 }
 
                 members.put(newUserID, new User(newUserID)); // add new user to clique
+
+                // restart all sealing activities for the transcript
+                synchronized (pendingBlockSeals) {
+                    pendingBlockSeals.clear(); // all sealing done up to now is irrelevant - we have new participant
+                }
 
                 String oldAddressTag = getCurrentAddressTag();
 
@@ -271,7 +280,7 @@ public class Clique extends Thread {
                 // give the new user the list of current conversation participants (over secure channel)
                 MembershipUpdateMessage mum = new MembershipUpdateMessage(new ArrayList(members.keySet()),
                                                                                         client.getUserID(), this.name);
-                String toTransmit = encryptAndMac(mum);
+                toTransmit = encryptAndMac(mum);
                 comm.send(invrespmsg.author, toTransmit);
 
             }

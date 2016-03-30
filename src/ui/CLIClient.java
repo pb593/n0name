@@ -121,7 +121,8 @@ public class CLIClient extends Client {
                 if(tokens.length >= 3) {
                     String userID = tokens[1];
                     String groupName = tokens[2];
-                    if(cliques.containsKey(groupName) && AddressBook.contains(userID)){
+                    if(cliques.containsKey(groupName) && AddressBook.contains(userID) &&
+                                                                                !userID.equals(myself.getUserID())){
                         Clique c = cliques.get(groupName); // get clique with this name
                         boolean success = c.addMember(userID); // add user to group
                         if(success)
@@ -209,7 +210,8 @@ public class CLIClient extends Client {
                 String[] tokens = str.split("\\s+"); //split command on whitespace
                 if(tokens.length >= 2) {
                     String userID = tokens[1];
-                    if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID)){
+                    if(cliques.containsKey(clique.getCliqueName()) && AddressBook.contains(userID) &&
+                                                                                !userID.equals(myself.getUserID())){
                         Clique c = cliques.get(clique.getCliqueName()); // get clique with this name
                         boolean success = c.addMember(userID); // add user to group
                         if(success)

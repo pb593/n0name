@@ -101,7 +101,9 @@ public class GUIClient extends Client {
                             users,
                             "select user...");
 
-                    if(userID != null && cliques.containsKey(groupID)) { // if user did not press 'Cancel' and group is known
+                    if(userID != null && !userID.equals(myself.getUserID()) && cliques.containsKey(groupID)) {
+                        // if user did not press 'Cancel' and group is known
+                        // also, can't add yourself
                         boolean success = cliques.get(groupID).addMember(userID);
                         if(success) updateContent(); // refresh GUI
                     }
