@@ -42,6 +42,8 @@ public class GUIClient extends Client {
 
     private ImageIcon[] status_icon = new ImageIcon[2];
 
+    private final String prompt_txt = "Type message here...";
+
     public GUIClient(String userID) throws UserIDTakenException, MessengerOfflineException {
         super(userID);
 
@@ -76,10 +78,11 @@ public class GUIClient extends Client {
             public void actionPerformed(ActionEvent e) { // send button is pressed
                 String selectedGroup = (String) groupList.getSelectedValue();
                 String msgText = inputMsgField.getText();
-                if(selectedGroup!= null && !msgText.equals("") && cliques.containsKey(selectedGroup)) {
+                if(selectedGroup!= null && !msgText.isEmpty() && !msgText.equals(prompt_txt)
+                                                                                && cliques.containsKey(selectedGroup)) {
                     // if the message is non-empty and a group is selected and known
                     cliques.get(selectedGroup).sendMessage(new TextMessage(msgText, userID, selectedGroup));
-                    inputMsgField.setText(inputMsgField.getToolTipText());
+                    inputMsgField.setText("");
                     updateContent(); // refresh GUI
                 }
             }
@@ -144,7 +147,7 @@ public class GUIClient extends Client {
             public void focusLost(FocusEvent e) { // message input field loses focus
                 super.focusLost(e);
                 if (inputMsgField.getText().equals("")) {
-                    inputMsgField.setText("Type message here..."); // remove the default text
+                    inputMsgField.setText(prompt_txt); // remove the default text
                 }
             }
         });
