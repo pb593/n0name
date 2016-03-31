@@ -19,6 +19,8 @@ import java.util.Scanner;
  */
 public class CLIClient extends Client {
 
+    public static final Integer interfaceCode = 1;
+
     private boolean isOnline = true;
     private final Object isOnlineLock = new Object(); // dummy object to sync on when accessing isOnline
 

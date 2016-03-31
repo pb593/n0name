@@ -24,6 +24,8 @@ import java.util.List;
  */
 public class GUIClient extends Client {
 
+    public static final Integer interfaceCode = 0;
+
     private JFrame frame;
 
     private JList groupList;

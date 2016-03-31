@@ -36,7 +36,7 @@ class Communicator extends Thread {
         @Override
         public void run() { //start listening on the port for incoming messages
             boolean ERROR = false;
-            System.out.print(String.format("Communicator with id=%d has started on port=%d\n", id, port));
+            //System.out.print(String.format("Communicator with id=%d has started on port=%d\n", id, port));
             while (!ERROR) {
                 try {
                     Socket s = srvskt.accept();
@@ -88,6 +88,8 @@ class Communicator extends Thread {
         this.port = port;
         srvskt = new ServerSocket(port);
         this.setDaemon(true); //communicator is a daemon thread
+        safclient.setDaemon(true);
+        sktserver.setDaemon(true);
         id = this.hashCode();
     }
 

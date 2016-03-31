@@ -173,7 +173,7 @@ public class Cryptographer {
             decrypted = cipher.doFinal(ciphertext);
         } catch(BadPaddingException | InvalidKeyException | IllegalBlockSizeException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
-            System.exit(-1); // just crash
+            System.exit(1); // just crash
         }
 
 
@@ -190,11 +190,11 @@ public class Cryptographer {
         } catch (NoSuchAlgorithmException e) {
             System.err.printf("Mac algorithm %s not found\n", macAlgo);
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(1);
         } catch (InvalidKeyException e) {
             System.err.println("Attempted to MAC with an invalid key");
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(1);
         }
 
         return macObj.doFinal(input);
@@ -210,7 +210,7 @@ public class Cryptographer {
             digest = Base64.encodeBase64URLSafeString(md.digest());
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(1);
         }
 
         return digest;

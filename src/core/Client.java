@@ -11,6 +11,7 @@ import scaffolding.AddressBook;
 import scaffolding.Utils;
 import ui.CLIClient;
 import ui.GUIClient;
+import ui.MachineClient;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -35,22 +36,34 @@ abstract public class Client implements Runnable {
     public static void main(String[] argv) {
         // main function of the client
 
-        // first, whether user wants a GUI or a CLI
-        boolean isCLI = (argv.length >= 1 && argv[0].equals("-cli"));
+        // first, whether user wants a GUI, CLI or machine interface
+        int interfaceCode = 0;
+        if(argv.length == 0) { // we need GUI
+            interfaceCode = GUIClient.interfaceCode;
+        }
+        else { // we have an option specified
+            if(argv[0].equals("-cli"))
+                interfaceCode = CLIClient.interfaceCode;
+            else if(argv[0].equals("-m"))
+                interfaceCode = MachineClient.interfaceCode;
+            else // some sort of other option specified
+                interfaceCode = GUIClient.interfaceCode; // fall back to GUI
+        }
 
         // try to reach out to address book
         try {
             AddressBook.init(); // initialize the address book
         } catch (MessengerOfflineException e) { // if we are offline
-            if(isCLI) { // CLI mode
+            if(interfaceCode == CLIClient.interfaceCode) { // CLI mode
                 System.out.println("You seem to be offline. Check you network connection and restart application");
             }
-            else { // GUI mode
+            else if(interfaceCode == GUIClient.interfaceCode) { // GUI mode
                 JOptionPane.showMessageDialog(null,
                         "You seem to be offline. Check you network connection and restart application", "Error",
                         JOptionPane.ERROR_MESSAGE);
             }
-            System.exit(-1);
+            else {} // machine interface just silently exits with error
+            System.exit(1);
         }
 
         Client cl = null;
@@ -58,11 +71,11 @@ abstract public class Client implements Runnable {
         while(true) {
             String userID = null;
             String rndUserID = Utils.randomAlphaNumeric(10);
-            if(isCLI) { // if we are in CLI mode
+            if(interfaceCode == CLIClient.interfaceCode) { // if we are in CLI mode
                 System.out.printf("Please choose your username (suggestion: %s):", rndUserID);
                 userID = scanner.nextLine();
             }
-            else { // if we are in GUI mode
+            else if(interfaceCode == GUIClient.interfaceCode) { // if we are in GUI mode
                 userID = (String) JOptionPane.showInputDialog(
                         null,
                         "Please pick a username",
@@ -75,39 +88,57 @@ abstract public class Client implements Runnable {
                 if(userID == null) // 'Cancel' button pressed
                     System.exit(0); // just exit
             }
+            else { // machine interface
+                if(argv.length >= 2) userID = argv[1]; else System.exit(1); // takes user name as shell argument
+            }
+
             try {
                 if(userID.split("\\s+").length != 1) {// if there were spaces in the userID
                     String error_msg = "The username you entered contains whitespace. This is not allowed. Try again.";
-                    if(isCLI) { // CLI mode
+                    if(interfaceCode == CLIClient.interfaceCode) { // CLI mode
                         System.out.println(error_msg);
                     }
-                    else { // GUI mode
+                    else if(interfaceCode == GUIClient.interfaceCode) { // GUI mode
                         JOptionPane.showMessageDialog(null, error_msg, "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                    else { // machine interface
+                        System.out.println("Error:WhiteSpaceInUsername");
+                        System.exit(1);
                     }
                 }
                 else { // username is valid
-                    if(isCLI) // CLI mode
+                    if(interfaceCode == CLIClient.interfaceCode) // CLI mode
                         cl = new CLIClient(userID);
-                    else // GUI mode
+                    else if(interfaceCode == GUIClient.interfaceCode)// GUI mode
                         cl = new GUIClient(userID);
+                    else // machine interface
+                        cl = new MachineClient(userID);
 
                     break; // exit loop if Client successfully constructed
                 }
             } catch (UserIDTakenException e) { // if this user name taken
                 String error_msg = "This user name is taken. Please try another one.";
-                if(isCLI) { // CLI mode
+                if(interfaceCode == CLIClient.interfaceCode) { // CLI mode
                     System.out.println(error_msg);
                 }
-                else { // GUI mode
+                else if(interfaceCode == GUIClient.interfaceCode) { // GUI mode
                     JOptionPane.showMessageDialog(null, error_msg, "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                else { // machine interface
+                    System.out.println("Error:UserNameTaken");
+                    System.exit(1);
                 }
             } catch (MessengerOfflineException e) { // we are offline
                 String error_msg = "You appear to be offline. Connect to network and try again.";
-                if(isCLI) { // CLI mode
+                if(interfaceCode == CLIClient.interfaceCode) { // CLI mode
                     System.out.println("You appear to be offline. Connect to network and try again.");
                 }
-                else { // GUI mode
+                else if(interfaceCode == GUIClient.interfaceCode) { // GUI mode
                     JOptionPane.showMessageDialog(null, error_msg, "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                else { // machine interface
+                    System.out.println("Error:WeAreOffline");
+                    System.exit(1);
                 }
             }
         }

@@ -39,6 +39,7 @@ public class Clique extends Thread {
         this.name = name;
         this.client = client;
         this.comm = comm;
+        this.setDaemon(true); // active component needs to exit when main thread UI thread exits
 
         // put myself in the Clique
         members.put(client.getUserID(), new User(client.getUserID()));
@@ -51,6 +52,7 @@ public class Clique extends Thread {
         this.name = name;
         this.client = client;
         this.comm = comm;
+        this.setDaemon(true); // active component needs to exit when main thread UI thread exits
 
         // put myself into members map
         members.put(client.getUserID(), new User(client.getUserID()));
@@ -110,7 +112,6 @@ public class Clique extends Thread {
             SealableBlock sBlock = history.getNextSealableBlock(members.keySet());
             if(sBlock != null) { // if found one
                 // TODO: sleeping inside synchronized block...
-                System.out.println("Found a sealable block: :" + sBlock.fingerprint);
                 synchronized (pendingBlockSeals) {
                     Set<String> haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint);
                     if (haventConfirmed == null) {
@@ -215,7 +216,6 @@ public class Clique extends Thread {
         /* Callback received from Client class */
         if(msg instanceof MembershipUpdateMessage) { // secure update on group membership after I've been added
             MembershipUpdateMessage mum = (MembershipUpdateMessage) msg;
-            System.out.println("Membership update: " + StringUtils.join(mum.members, ", "));
 
             for(String userID: mum.members) {
                 if(!this.members.containsKey(userID)) // if don't have this user yet
@@ -241,8 +241,6 @@ public class Clique extends Thread {
 
             client.addAddressTag(getCurrentAddressTag(), this.name); // add new address tag
             client.removeAddressTag(oldAddressTag); // remove the previous address tag
-
-            System.out.println("UserAddedNotification: " + newUserID);
         }
         else if(msg instanceof InviteResponseMessage) { // response to an InviteMessage sent by me earlier
             boolean isValid = pendingInvites.contains(msg.author); // check if I actually invited this person

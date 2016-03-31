@@ -14,7 +14,7 @@ public class Utils {
             Thread.sleep(millis); // try to sleep
         } catch (InterruptedException e) {
             e.printStackTrace();
-            System.exit(-1); // just crash if fail :-)
+            System.exit(1); // just crash if fail :-)
         }
     }
 
