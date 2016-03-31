@@ -1,6 +1,5 @@
 package core;
 
-import exception.MessengerOfflineException;
 import message.*;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
@@ -111,6 +110,7 @@ public class Clique extends Thread {
             SealableBlock sBlock = history.getNextSealableBlock(members.keySet());
             if(sBlock != null) { // if found one
                 // TODO: sleeping inside synchronized block...
+                System.out.println("Found a sealable block: :" + sBlock.fingerprint);
                 synchronized (pendingBlockSeals) {
                     Set<String> haventConfirmed = pendingBlockSeals.get(sBlock.fingerprint);
                     if (haventConfirmed == null) {

@@ -136,8 +136,6 @@ public class MessageHistory {
                 List<TextMessage> msgs = new ArrayList<>(sealableSet.subSet(msg, true, sealableSet.last(), true).descendingSet());
                 return msgs.isEmpty() ? null : new SealableBlock(msgs, blocksSealedCount); // return null for empty blocks
             }
-
-
         }
 
         return null;
