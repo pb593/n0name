@@ -8,6 +8,8 @@
 \usepackage{color}
 \usepackage{array}
 \usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
 
 \usepackage{blindtext}
 \usepackage[ttdefault=true]{AnonymousPro}
@@ -15,6 +17,10 @@
 \usepackage[toc]{appendix}
 
 \usepackage{standalone}
+
+\usepackage{cleveref}
+\crefname{section}{\S}{\S\S}
+\Crefname{section}{\S}{\S\S}
 
 \newcommand{\skippage}{\newpage\null\newpage}
 
@@ -35,6 +41,9 @@
 \vfill
 \clearpage
 \endgroup}
+
+\setlength{\fboxsep}{1pt}
+\setlength\parindent{0pt}
 
 \begin{document}
 
@@ -57,8 +66,11 @@
 The aim of this project has been to produce an implementation of KleeQ, a peer-to-peer conversation security protocol designed for devices with limited connectivity, and evaluate its performance and practicality in the broader context of Internet messaging. The intention was to preserve the security guarantees of the original design as well as understand its limitations that could potentially be used as attack vectors. It was also expected that a useable prototype of a messaging application would be produced, to evaluate the usability implications of the design as well as demonstrate the work of the implementation.
 
 \section*{Summary of the Work Completed}
+
+Each of the project's aims has been successfully achieved. Despite it taking more time than expected, the protocol has been implemented in full, according to the specification, retaining all of the security properties of the design. The implementation has demonstrated some impressive performance characteristics, highlighting some of the practical benefits that the use of the protocol can offer. A prototype of a messaging system, comprising a client application as well as some external components, has been implemented and tested. \\
+
 {\color{red} 
-Each of the project's aims has been successfully achieved. Despite it taking more time than expected, the protocol has been implemented in full, according to the specification, retaining all of the security properties of the design. The implementation has demonstrated some impressive performance characteristics, highlighting some of the practical benefits that the use of the protocol can offer. A prototype of a messaging system, comprising a client application as well as some external components, has been implemented and tested.}
+Re-write with more specific results (with numbers etc) after do eval???}
 
 \pagebreak
 \section*{Declaration of Originality}
@@ -74,32 +86,136 @@ I Pavel Berkovich of St John's College, being a candidate for Part II of the Com
 \skippage
 
 \pagenumbering{arabic} % Arabic page numbering
+\pagestyle{headings}
 
 \chapter{Introduction}
 \section{Background and Motivation}
-Since the times of antiquity, people have employed various mechanisms to secure information against disclosure to unintended parties. Middle Eastern scholars from as early as 600 BC are credited with the creation of substitution ciphers. The ancient Greek historian Herodotus left accounts the use of steganographic techniques, such as hiding messages on tablets beneath a layer of wax or on a messenger's body. Other notable examples of ancient information security systems include hierogliphics, the Spartan scytale and the Caesar cipher. As the schemes for protecting information were getting more elaborate, so were the methods of breaking codes and ciphers. The Arab polymath Al-Kindi, who lived in the 800s AD, is known as the inventor of frequency analysis which remained one of the key techniques in cryptanalysis until the middle of the 20th century. \\
+Since the times of antiquity, people have employed various mechanisms to secure information against disclosure to unintended parties. Middle Eastern scholars from as early as 600 BC are credited with the creation of substitution ciphers. The ancient Greek historian Herodotus left accounts of the use of steganographic techniques, such as hiding messages beneath a layer of wax or on a messenger's body. Other notable examples of ancient information security systems include hierogliphics, the Spartan scytale and the Caesar cipher. As the schemes for protecting information were getting more elaborate, so were the methods of breaking codes and ciphers. The Arab polymath Al-Kindi, who lived in the 800s AD, is known as the inventor of frequency analysis which remained one of the key techniques in cryptanalytics until the middle of the 20th century. \\
 
-Largely fuelled by military and commercial applications, the competition between cryptographers and codebreakers was accelerating as humanity made technological progress. Movable type printing was invented in China around 1000 AD which made it possible to print text at large scale. The Renaissance period in Europe was marked by the impetuous development of cryptography, including the invention of the first mechanical cipher machine by Leon Batista Aberti and the introduction of the Vigen\`{e}re cipher by Blaise de Vigen\`{e}re. The 19th century and the indusrial revolution brought us the telegraph, the Morse code and the famous laws of cryptography by the Dutch mathematician Auguste Kerckhoff. \\ 
+Largely fuelled by military and commercial applications, the competition between cryptographers and codebreakers was accelerating as humanity made technological progress. Movable type printing was invented in China around 1000 AD which made it possible to print text at a large scale. The Renaissance period in Europe was marked by the impetuous development of cryptography, including the invention of the first mechanical cipher machine by Leon Batista Aberti and the discovery of the Vigen\`{e}re cipher by Blaise de Vigen\`{e}re. The 19th century and the indusrial revolution brought us the telegraph, the Morse code and the famous laws of cryptography by the Dutch mathematician Auguste Kerckhoff. \\ 
 
-The 20th century was the time of global wars and military competition which provided an additional impulse to the development of information security systems. During World War I, the stream cipher and the one-time pad were developed and used for the first time. World War II involved the use of advanced mechanical cryptographic systems by all of the sides, with the British team of cryptologists headed by John Harper famously breaking the German Enigma cipher helping the Allied powers secure the victory. During the subsequent Cold War, the adversaries were making extensive use of electronic intelligence which led to the development of some of the cyptographic primitives that we use nowadays, including Feistel structures, Diffie-Hellman key exchange protocol and RSA public key encryption. \\
+The 20th century was the time of global wars and military conflicts which provided an additional impulse to the development of information security systems. During World War I, the stream cipher and the one-time pad were developed and used for the first time. World War II involved the use of advanced electromechanical cryptographic systems by all of the sides, with the British team of cryptologists headed by John Harper famously breaking the German Enigma cipher helping the Allied powers secure the victory. During the subsequent Cold War, the adversaries were making extensive use of electronic intelligence which led to the development of some of the cyptographic primitives that we use nowadays, including Feistel network block ciphers, Diffie-Hellman key exchange protocol and RSA public key encryption. \\
 
-With the advent of the Internet which provided means to communicate electronically on a global scale, the demand for information security systems skyrocketed as a result of the expansion of its user base from government and military officials to businesses and ordinary people. The era of global information brought many opportunities, but was also marked by the use of information technology for malicious purposes, with cybercrime costing billions to the world economy every year. The shift to mobile computing in the 2000s meant that people were now using computers for a wider range of everyday tasks which allowed them to become more productive, but also made them more vulnerable to cyberattacks and surveillance. The 2013 revelations made by Edward Snowden suggest that governments are now using their resources to collect information about ordinary civillians on a global scale, which poses a direct threat to the privacy and security of our daily lives. \\
+With the advent of the Internet which provided means to communicate electronically on a global scale, the demand for information security systems skyrocketed as a result of the expansion of its user base from government and military officials to businesses and ordinary people. The era of global information brought many opportunities, but was also marked by the use of information technology for malicious purposes, with cybercrime costing billions to the world economy every year. The shift to mobile computing in the 2000s meant that people were now using computers for a wider range of everyday tasks which allowed them to become more productive, but also made them more vulnerable to cyberattacks and surveillance. The 2013 revelations made by Edward Snowden suggest that governments are now using their resources to collect information about ordinary civillians on a global scale, posing a direct threat to the privacy and security of our daily lives. \\
 
-As a result of public concern in response to these new dangers, we are now witnessing an unprecedented level of effort to develop communication systems emphasising security and privacy. In particular, there has been a major push to develop secure messaging systems, which would allow people to communicate freely, without fear of being targeted by either individual or sovereign adversaries. The author of this report firmly believes that everyone should be entitled to converse in private, and has therefore decided to make his contribution to this cause.
-
-
+As a result of public concern in response to these new dangers, we are now witnessing an unprecedented level of effort to develop communication systems emphasising security and privacy. In particular, there has been a major push to develop secure Internet messengers which would allow people to communicate freely, without fear of being targeted by either malicious individuals or state surveillance programmes. The author of this dissertation feels great respect for these endeavors and firmly believes that having a private conversation is a fundamental right of any human being. He therefore regards this work as his own modest contribution to the noble cause of protecting humanity from the cyber-threats it is facing today.
 
 
 
+\section{Overview of Secure Messaging}
+The aforementioned series of disclosures about the widespread state surveillance programmes led to the creation of a large number of messaging systems designed with security in mind. Some of these messengers (e.g. Telegram \footnote{\url{https://telegram.org/}}) received considerable public attention and celebrated commercial success, whilst others remained largely unknown to non-experts. It is worth pointing out that, similarly to many other information security products, secure chats present an example of what is known as a ``market for lemons'' \cite{akerlof1970lemons} \cite{anderson2001information}. In this type of market, buyers have no feasible way to assess the quality of what is offered, and success of a product is determined by other factors (e.g. low price, short time-to-market), leaving producers with no economic incentive to invest in developing high-quality solutions. For secure chats, this implies that commercial success of a messaging application is by no means a measure of its actual security. \\ 
+
+Discussing secure messaging in more detail and comparing various solutions requires a common threat model and a systematic evaluation framework. One possible approach was proposed by Unger et al~\cite{unger2015sok} in a recent survey of the existing secure messaging systems, analysing the security, usability and ease-of-adoption trade-offs of different solutions. The study identifies three key problems that any secure messenger must solve -- trust establishment, conversation security and transport privacy. \\
+
+
+Below is a more detailed discussion of each of these problem areas, mentioning some of the existing solutions and their characteristics.
 
 
 
+%\noindent The key problems are:
+%\begin{description}
+%    \item[Problem 1: Trust Establishment]\hfill \\
+%        How do we know that our peers are who they say they are? How do we make sure that they are not being impersonated by a malicious adversary?
+%    \item[\fbox{Problem 2: Conversation Security}]\hfill \\
+%        Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the messages' content? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
+%    \item[Problem 3: Transport Privacy]\hfill \\
+%        What is the mechanics for actually sending the message so as to hide the message metadata (e.g. sender identity, recipient identity, conversation to which the message belongs etc)?
+%\end{description}
+%Below is a more detailed discussion of each of these challenges, with some mentions of existing solutions and their parameters.
 
-\section{Problems of Secure Communication}
 \subsection{Trust Establishment}
+\paragraph{Definition:} \hspace{-8pt} 
+\textit{Trust establishment} -- the process of making sure that communication happens with, and only with, the intended parties.
+
+\paragraph{Explanation:}  \hspace{-8pt} 
+This is the problem of making sure that our peers are who they say they are. The aim is to make it impossible for a malicious adversary to impersonate users and communicate on their behalf.
+
+\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+    \item[Trust-on-First-Use (TOFU)] \hfill \\
+        This method assumes the absence of adversaries at the time of initial connection and relies on memorising previously seen keys~\cite{wendlandt2008perspectives}. TOFU-based systems (e.g. TextSecure \footnote{\url{https://whispersystems.org/}}) tend to be easy to use and adopt, but do not prevent man-in-the-middle (MitM) attacks on first connection.
+    \item[Manual Verification Methods] \hfill \\
+        Methods in this category rely on verifying users' public keys, or some user-friendly representation thereof, out-of-band (e.g. in person). This approach is very secure, practically eliminating the possibility of a MitM attack, but has the obvious usability disadvantages. In fact, usability problems often mean that that users neglect the recommended procedures (e.g. perform key verification through unencrypted email) which results in degraded security~\cite{beautement2009compliance}.
+    \item[Authority-based trust] \hfill \\
+        This class of methods is widely used in the Web nowadays. The idea is to verify public keys with a trusted authority, either through public key directories or through certificates. In either case, this scheme has good usability characteristics, but leaves users unprotected from MitM attacks \textit{by the authority}. There is some ongoing work \cite{ryan2014enhanced}\cite{laurie2014certificate}\cite{melara2014coniks} aiming to fix this issue by using append-only auditable \textit{transparency logs} which would allow users to at least detect MitM attacks after the fact. This helps patch up the security to an extent, but introduces some usability issues \cite{unger2015sok}.
+    \item[Web-of-Trust (WoT)] \hfill \\
+        In this approach, trust is distributed rather than central. Users verify keys manualy, and then sign each other's keys and post the signatures on key servers, thereby confirming that they trust each other. Then, assuming the transitivity of the trust relation, any user can compute the set of parties they can trust (transitive closure on the trust relation). Reliance on manual verification makes WoT-based systems (e.g. PGP \footnote{\url{http://www.openpgp.org/}}) immune to MitM attacks, but hurts usability.
+\end{description}
+
 \subsection{Conversation Security}
+\label{ssec:convsec}
+\paragraph{Definition:} \hspace{-8pt}
+\textit{Conversation security} -- the set of methods used to protect the security and privacy of the conversation's content.
+
+\paragraph{Explanation:} \hspace{-8pt}
+Once trust has been established, it is necessary to make sure that the adversary cannot see the content of the conversation, and cannot inject, modify or replay messages. Solving this problem involves deciding how to exchange keys, what format the messages should have and how they should be encrypted.
+
+\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
+{\color{red}
+Should I go into this much detail???}
+
+
+
+
+
 \subsection{Transport Privacy}
-\section{Aims of the Project}
+\paragraph{Definition:} \hspace{-8pt}
+\textit{Transport privacy} is the set of methods for hiding conversation metadata.
+
+\paragraph{Explanation:} \hspace{-8pt}
+Once we are sure that the content of the conversation is protected, we need to decide how we can hide other information about it, such as the identities of the participants, time of message transmission etc. This problem is currently considered the hardest to solve amongst the three \cite{unger2015sok}.
+
+\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
+{\color{red}
+Should I go into this much detail???}
+
+
+\section{Substance and Aims of the Project}
+The area of focus for this project is \emph{conversation security} (\cref{ssec:convsec}), which is concerned with protecting the \emph{content} of messages from the adversary. The project involves implementing and evaluating KleeQ \cite{reardon2007kleeq} -- a peer-to-peer conversation security protocol with the following security guarantees:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+    \item[Confidentiality] \hfill \\
+        Nobody except the conversation participants can read the messages.
+    \item[Intergrity of conversation] \hfill \\
+        The adversary cannot inject, modify or replay messages.
+    \item[Forward secrecy] \hfill \\
+        A compromised key does not enable reading of previously encrypted messages.
+    \item[Backward secrecy] \hfill \\
+        A compromised key does not enable reading of subsequently encrypted messages.
+    \item[Authorship repudiation] \hfill \\
+        Given the transcript of a conversation and access to all keys, there is no computationally feasible way to prove that a given message was written by a particular participant.
+    \item[Participation repudiation] \hfill \\
+        Given the transcript of a conversation and access to all keys except for one user, there is no computationally feasible way to prove that this user was in a conversation with any of the others.
+\end{description}
+
+The above guarantees make KleeQ one of the most secure protocols to date. At the same time, it has some convenient usability characteristics, for example:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+    \item[Support for groups] \hfill \\
+        Unlike many other solutions, KleeQ supports group communication natively.
+    \item[Peer-to-peer (P2P)] \hfill \\
+        The protocol is peer-to-peer, so no additional service provider is required.
+    \item[Support for asynchrony] \hfill \\
+        It is possible to send messages to disconnected peers, to be delivered when they go back online again.
+    \item[Unreliable network resilience] \hfill \\
+        The protocol was originally proposed for devices with transient connectivity, so it assumes that the network can delay, drop or re-order messages.
+\end{description}
+
+Whilst having an unconventional design, KleeQ strikes a good balance between security characteristics and usability, which seems to be the key trade-off in secure messaging at the moment. \\
+
+The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) described the core components of the protocol in sufficient detail, but only provided an unstable proof-of-concept implementation in Python. This project aims to build on their work, with the objectives summarised as follows:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+    \item[Implementation] \hfill \\
+        Fill out the gaps in the protocol's description and construct a more robust implementation in Java, preserving the security features of the original design.
+        
+    \item[Evaluation of Performance] \hfill \\
+        Use the newly created implementation to evaluate the performance of the protocol and its practicality for use in ubiquitous secure messaging.
+        
+    \item[Evaluation of Security] \hfill \\
+        Understand the limitations of the protocol. See what further work would need to be done to eliminate the remaining attack vectors.
+        
+    \item[Messenger Prototype] \hfill \\
+        Build a prototype of a messaging application based on KleeQ, with the view to assess the usability implications of the protocol.
+\end{description}
+The specifics of how the above objectives are addressed in this project are described in the next chapter.
 
 
 \chapter{Preparation}
@@ -115,10 +231,9 @@ As a result of public concern in response to these new dangers, we are now witne
 
 
 
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
 \addcontentsline{toc}{chapter}{Bibliography}
-\begin{thebibliography}{9}
-
-\end{thebibliography}
 
 \begin{appendices}
 \chapter{Project Proposal}
@@ -281,28 +396,6 @@ Implement the optional extensions as time allows. Make sure that none of the pre
 
 \subsection*{Week 22 (Mar 12 -- Mar 18)}
 A week-long holiday is planned for these dates. No work will be done during this time.
-
-
-%\subsection*{Weeks 11-12 (Jan 4 -- Jan 17)}
-%Use Orchid, the Tor library for Java, to implement metadata hiding. Make sure the application is still usable and the introduced delays are tolerable.
-
-%\vspace{0.7\baselineskip}
-%\noindent
-%\textit{Milestone:} Transport security provided -- traffic anonymised, some other metadata hidden.
-
-%\subsection*{Weeks 13-15 (Jan 18 -- Feb 7)}
-%Use CONIKS self-auditable public key logs to do trust establishment -- integrate a CONIKS client into the messenger and run a CONIKS server on the cloud hosting platform. Test the performance of the system, and measure how much traffic is required for log auditing.
-
-%\vspace{0.7\baselineskip}
-%\noindent
-%\textit{Milestone:} Trust established securely. MitM attacks facilitated by the trust authority can be detected.
-
-%\subsection*{Weeks 16-18 (Feb 8 -- Feb 28)}
-%Use a DHT with anonymous queries to implement anonymous contact discovery. Measure the performance of the DHT, see how much time is necessary for synchronisation.
-
-%\vspace{0.7\baselineskip}
-%\noindent
-%\textit{Milestone:} Contact discovery anonymised. The previous server-based "address book" replaced.
 
 \subsection*{Weeks 23-27 (Mar 19 -- Apr 22)}
 Write up the dissertation. Use the project log to recollect the details of what work has been done and how. Pay special attention to the Evaluation section, describing in detail the previously made performance measurements. Arrange regular meetings with the supervisor to receive feedback and iteratively refine the work. This part of work will take a long time, since it will be interleaved with Tripos revision over the Easter Vacation.
