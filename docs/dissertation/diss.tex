@@ -10,6 +10,12 @@
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage[labelfont=bf]{caption}
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+\usepackage{setspace}
 
 \usepackage{blindtext}
 \usepackage[ttdefault=true]{AnonymousPro}
@@ -21,6 +27,8 @@
 \usepackage{cleveref}
 \crefname{section}{\S}{\S\S}
 \Crefname{section}{\S}{\S\S}
+
+
 
 \newcommand{\skippage}{\newpage\null\newpage}
 
@@ -89,136 +97,273 @@ I Pavel Berkovich of St John's College, being a candidate for Part II of the Com
 \pagestyle{headings}
 
 \chapter{Introduction}
-\section{Background and Motivation}
-Since the times of antiquity, people have employed various mechanisms to secure information against disclosure to unintended parties. Middle Eastern scholars from as early as 600 BC are credited with the creation of substitution ciphers. The ancient Greek historian Herodotus left accounts of the use of steganographic techniques, such as hiding messages beneath a layer of wax or on a messenger's body. Other notable examples of ancient information security systems include hierogliphics, the Spartan scytale and the Caesar cipher. As the schemes for protecting information were getting more elaborate, so were the methods of breaking codes and ciphers. The Arab polymath Al-Kindi, who lived in the 800s AD, is known as the inventor of frequency analysis which remained one of the key techniques in cryptanalytics until the middle of the 20th century. \\
-
-Largely fuelled by military and commercial applications, the competition between cryptographers and codebreakers was accelerating as humanity made technological progress. Movable type printing was invented in China around 1000 AD which made it possible to print text at a large scale. The Renaissance period in Europe was marked by the impetuous development of cryptography, including the invention of the first mechanical cipher machine by Leon Batista Aberti and the discovery of the Vigen\`{e}re cipher by Blaise de Vigen\`{e}re. The 19th century and the indusrial revolution brought us the telegraph, the Morse code and the famous laws of cryptography by the Dutch mathematician Auguste Kerckhoff. \\ 
-
-The 20th century was the time of global wars and military conflicts which provided an additional impulse to the development of information security systems. During World War I, the stream cipher and the one-time pad were developed and used for the first time. World War II involved the use of advanced electromechanical cryptographic systems by all of the sides, with the British team of cryptologists headed by John Harper famously breaking the German Enigma cipher helping the Allied powers secure the victory. During the subsequent Cold War, the adversaries were making extensive use of electronic intelligence which led to the development of some of the cyptographic primitives that we use nowadays, including Feistel network block ciphers, Diffie-Hellman key exchange protocol and RSA public key encryption. \\
-
-With the advent of the Internet which provided means to communicate electronically on a global scale, the demand for information security systems skyrocketed as a result of the expansion of its user base from government and military officials to businesses and ordinary people. The era of global information brought many opportunities, but was also marked by the use of information technology for malicious purposes, with cybercrime costing billions to the world economy every year. The shift to mobile computing in the 2000s meant that people were now using computers for a wider range of everyday tasks which allowed them to become more productive, but also made them more vulnerable to cyberattacks and surveillance. The 2013 revelations made by Edward Snowden suggest that governments are now using their resources to collect information about ordinary civillians on a global scale, posing a direct threat to the privacy and security of our daily lives. \\
-
-As a result of public concern in response to these new dangers, we are now witnessing an unprecedented level of effort to develop communication systems emphasising security and privacy. In particular, there has been a major push to develop secure Internet messengers which would allow people to communicate freely, without fear of being targeted by either malicious individuals or state surveillance programmes. The author of this dissertation feels great respect for these endeavors and firmly believes that having a private conversation is a fundamental right of any human being. He therefore regards this work as his own modest contribution to the noble cause of protecting humanity from the cyber-threats it is facing today.
-
-
+\label{ch:intro}
 
 \section{Overview of Secure Messaging}
-The aforementioned series of disclosures about the widespread state surveillance programmes led to the creation of a large number of messaging systems designed with security in mind. Some of these messengers (e.g. Telegram \footnote{\url{https://telegram.org/}}) received considerable public attention and celebrated commercial success, whilst others remained largely unknown to non-experts. It is worth pointing out that, similarly to many other information security products, secure chats present an example of what is known as a ``market for lemons'' \cite{akerlof1970lemons} \cite{anderson2001information}. In this type of market, buyers have no feasible way to assess the quality of what is offered, and success of a product is determined by other factors (e.g. low price, short time-to-market), leaving producers with no economic incentive to invest in developing high-quality solutions. For secure chats, this implies that commercial success of a messaging application is by no means a measure of its actual security. \\ 
+\label{sec:intro.overview_sec_mess}
+The era of global communication has presented humanity with many opportunities, but has also made our private lives more vulnerable to intrusion. Given the broad range of cyber-threats that our society is facing today, there is now significant demand for secure communication systems. The recent disclosures about widespread state surveillance programmes demonstrated the massive scale of the resources that a potential adversary might posses, and lead to fundamental change in public perception of what security means. As a result, we are now witnessing an unprecedented level of effort to develop messaging systems emphasising security and privacy. Some of these systems enjoyed considerable popularity whilst others remained largely unknown to non-experts, but each of them has been found to have some security flaws\footnote{\url{https://www.eff.org/secure-messaging-scorecard}} or usability problems.\\
 
-Discussing secure messaging in more detail and comparing various solutions requires a common threat model and a systematic evaluation framework. One possible approach was proposed by Unger et al~\cite{unger2015sok} in a recent survey of the existing secure messaging systems, analysing the security, usability and ease-of-adoption trade-offs of different solutions. The study identifies three key problems that any secure messenger must solve -- trust establishment, conversation security and transport privacy. \\
+Discussing secure messaging in more detail and comparing different solutions requires a clearly defined threat model and a systematic evaluation framework. One possible approach was proposed by Unger et al~\cite{unger2015sok} in a recent survey of the existing secure messaging systems which identified three key problems that any secure messenger must solve, namely:
 
+% It is worth pointing out that, similarly to many other information security products, secure chats present an example of what is known as a ``market for lemons'' \cite{akerlof1970lemons} \cite{anderson2001information}. In this type of market, buyers have no feasible way to assess the quality of what is offered, and success of a product is determined by other factors (e.g. low price, short time-to-market), leaving producers with no economic incentive to invest in developing high-quality solutions. For secure chats, this implies that commercial success of a messaging application is by no means a measure of its actual security. \\ 
 
-Below is a more detailed discussion of each of these problem areas, mentioning some of the existing solutions and their characteristics.
-
-
-
-%\noindent The key problems are:
-%\begin{description}
-%    \item[Problem 1: Trust Establishment]\hfill \\
-%        How do we know that our peers are who they say they are? How do we make sure that they are not being impersonated by a malicious adversary?
-%    \item[\fbox{Problem 2: Conversation Security}]\hfill \\
-%        Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the messages' content? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
-%    \item[Problem 3: Transport Privacy]\hfill \\
-%        What is the mechanics for actually sending the message so as to hide the message metadata (e.g. sender identity, recipient identity, conversation to which the message belongs etc)?
-%\end{description}
-%Below is a more detailed discussion of each of these challenges, with some mentions of existing solutions and their parameters.
-
-\subsection{Trust Establishment}
-\paragraph{Definition:} \hspace{-8pt} 
-\textit{Trust establishment} -- the process of making sure that communication happens with, and only with, the intended parties.
-
-\paragraph{Explanation:}  \hspace{-8pt} 
-This is the problem of making sure that our peers are who they say they are. The aim is to make it impossible for a malicious adversary to impersonate users and communicate on their behalf.
-
-\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
-\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
-    \item[Trust-on-First-Use (TOFU)] \hfill \\
-        This method assumes the absence of adversaries at the time of initial connection and relies on memorising previously seen keys~\cite{wendlandt2008perspectives}. TOFU-based systems (e.g. TextSecure \footnote{\url{https://whispersystems.org/}}) tend to be easy to use and adopt, but do not prevent man-in-the-middle (MitM) attacks on first connection.
-    \item[Manual Verification Methods] \hfill \\
-        Methods in this category rely on verifying users' public keys, or some user-friendly representation thereof, out-of-band (e.g. in person). This approach is very secure, practically eliminating the possibility of a MitM attack, but has the obvious usability disadvantages. In fact, usability problems often mean that that users neglect the recommended procedures (e.g. perform key verification through unencrypted email) which results in degraded security~\cite{beautement2009compliance}.
-    \item[Authority-based trust] \hfill \\
-        This class of methods is widely used in the Web nowadays. The idea is to verify public keys with a trusted authority, either through public key directories or through certificates. In either case, this scheme has good usability characteristics, but leaves users unprotected from MitM attacks \textit{by the authority}. There is some ongoing work \cite{ryan2014enhanced}\cite{laurie2014certificate}\cite{melara2014coniks} aiming to fix this issue by using append-only auditable \textit{transparency logs} which would allow users to at least detect MitM attacks after the fact. This helps patch up the security to an extent, but introduces some usability issues \cite{unger2015sok}.
-    \item[Web-of-Trust (WoT)] \hfill \\
-        In this approach, trust is distributed rather than central. Users verify keys manualy, and then sign each other's keys and post the signatures on key servers, thereby confirming that they trust each other. Then, assuming the transitivity of the trust relation, any user can compute the set of parties they can trust (transitive closure on the trust relation). Reliance on manual verification makes WoT-based systems (e.g. PGP \footnote{\url{http://www.openpgp.org/}}) immune to MitM attacks, but hurts usability.
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Problem 1: Trust Establishment]\hfill \\
+        How do we know that our peers are who they say they are? How do we make sure that they are not being impersonated by a malicious adversary?
+    \item[Problem 2: Conversation Security]\hfill \\
+        Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the \emph{conversation's content}? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
+    \item[Problem 3: Transport Privacy]\hfill \\
+        Once we have secured the content of our messages, how do we actually \emph{send} them so as to \emph{hide their metadata} (e.g. sender identity, recipient identity, conversation to which the message belongs etc)?
 \end{description}
+The area of focus for this project is \emph{conversation security} (Problem 2 above).
 
-\subsection{Conversation Security}
-\label{ssec:convsec}
-\paragraph{Definition:} \hspace{-8pt}
-\textit{Conversation security} -- the set of methods used to protect the security and privacy of the conversation's content.
+\section{Aims of the Project}
+\label{sec:intro.aims}
+This project aims to build on KleeQ \cite{reardon2007kleeq} -- a peer-to-peer conversation security protocol that protects the content of conversation in a fully connected group (clique) of trusted participants communicating in a broadcast manner. \\
 
-\paragraph{Explanation:} \hspace{-8pt}
-Once trust has been established, it is necessary to make sure that the adversary cannot see the content of the conversation, and cannot inject, modify or replay messages. Solving this problem involves deciding how to exchange keys, what format the messages should have and how they should be encrypted.
+The scheme relies on Diffie-Hellman key exchange for deriving a common key which is used for encryption and message authentication. Protocol uses the \emph{patching algorithm} to exchange messages and converge on a global transcript. To ensure integrity of the conversation, the transcript is then verified in blocks of several messages via the process of \emph{sealing}. KleeQ achieves forward and backward secrecy by asynchronously rotating keys after a block is sealed, meaning that a compromised key only gives the adversary the ability to read messages within one block, but not in the previous or subsequent ones. The protocol enables users to repudiate authorship of specific messages as well as participation in a given conversation, since it only uses the common keys derived as part of the conversation to authenticate messages and makes no use of public keys. The asynchronous nature of the protocol makes it resilient to unstable network conditions and makes it possible to write messages while offline and then re-converge on a single transcript when connection is re-established. \\
 
-\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
-{\color{red}
-Should I go into this much detail???}
+As compared to other conversation security solutions \cite{unger2015sok}, KleeQ finds a good balance between security and usability characteristics which makes it a promising candidate for use in general-purpose messaging applications. \\
 
+The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) omitted some details in the protocol's description and only provided an unstable proof-of-concept implementation. This project aims to take their work further by re-implementing KleeQ from scratch preserving all of its security guarantees, and evaluating its performance and practicality for use in everyday messaging. More specifically, the objectives are as follows:
 
-
-
-
-\subsection{Transport Privacy}
-\paragraph{Definition:} \hspace{-8pt}
-\textit{Transport privacy} is the set of methods for hiding conversation metadata.
-
-\paragraph{Explanation:} \hspace{-8pt}
-Once we are sure that the content of the conversation is protected, we need to decide how we can hide other information about it, such as the identities of the participants, time of message transmission etc. This problem is currently considered the hardest to solve amongst the three \cite{unger2015sok}.
-
-\paragraph{Common techniques and trade-offs:} \hspace{-8pt}
-{\color{red}
-Should I go into this much detail???}
-
-
-\section{Substance and Aims of the Project}
-The area of focus for this project is \emph{conversation security} (\cref{ssec:convsec}), which is concerned with protecting the \emph{content} of messages from the adversary. The project involves implementing and evaluating KleeQ \cite{reardon2007kleeq} -- a peer-to-peer conversation security protocol with the following security guarantees:
-\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
-    \item[Confidentiality] \hfill \\
-        Nobody except the conversation participants can read the messages.
-    \item[Intergrity of conversation] \hfill \\
-        The adversary cannot inject, modify or replay messages.
-    \item[Forward secrecy] \hfill \\
-        A compromised key does not enable reading of previously encrypted messages.
-    \item[Backward secrecy] \hfill \\
-        A compromised key does not enable reading of subsequently encrypted messages.
-    \item[Authorship repudiation] \hfill \\
-        Given the transcript of a conversation and access to all keys, there is no computationally feasible way to prove that a given message was written by a particular participant.
-    \item[Participation repudiation] \hfill \\
-        Given the transcript of a conversation and access to all keys except for one user, there is no computationally feasible way to prove that this user was in a conversation with any of the others.
-\end{description}
-
-The above guarantees make KleeQ one of the most secure protocols to date. At the same time, it has some convenient usability characteristics, for example:
-\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
-    \item[Support for groups] \hfill \\
-        Unlike many other solutions, KleeQ supports group communication natively.
-    \item[Peer-to-peer (P2P)] \hfill \\
-        The protocol is peer-to-peer, so no additional service provider is required.
-    \item[Support for asynchrony] \hfill \\
-        It is possible to send messages to disconnected peers, to be delivered when they go back online again.
-    \item[Unreliable network resilience] \hfill \\
-        The protocol was originally proposed for devices with transient connectivity, so it assumes that the network can delay, drop or re-order messages.
-\end{description}
-
-Whilst having an unconventional design, KleeQ strikes a good balance between security characteristics and usability, which seems to be the key trade-off in secure messaging at the moment. \\
-
-The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) described the core components of the protocol in sufficient detail, but only provided an unstable proof-of-concept implementation in Python. This project aims to build on their work, with the objectives summarised as follows:
-\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Implementation] \hfill \\
-        Fill out the gaps in the protocol's description and construct a more robust implementation in Java, preserving the security features of the original design.
+        Fill out the gaps in the protocol's description and construct a messaging application based on it, preserving the security features of the original design.
         
     \item[Evaluation of Performance] \hfill \\
-        Use the newly created implementation to evaluate the performance of the protocol and its practicality for use in ubiquitous secure messaging.
+        Use the newly created application to evaluate the performance of the protocol and determine what limits it would impose on potential deployment.
         
-    \item[Evaluation of Security] \hfill \\
-        Understand the limitations of the protocol. See what further work would need to be done to eliminate the remaining attack vectors.
-        
-    \item[Messenger Prototype] \hfill \\
-        Build a prototype of a messaging application based on KleeQ, with the view to assess the usability implications of the protocol.
-\end{description}
-The specifics of how the above objectives are addressed in this project are described in the next chapter.
+    \item[Evaluation of Usability] \hfill \\
+        Understand the usability implications of the protocol and assess the feasibility of its use in different kinds of consumer messaging systems.
 
+\end{description}
+
+%The area of focus for this project is \emph{conversation security} (\cref{ssec:convsec}), which is concerned with protecting the \emph{content} of messages from the adversary. The project involves implementing and evaluating KleeQ \cite{reardon2007kleeq} -- a peer-to-peer conversation security protocol with the following security guarantees:
+%\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+%    \item[Confidentiality] \hfill \\
+%        Nobody except the conversation participants can read the messages.
+%    \item[Intergrity of conversation] \hfill \\
+%        The adversary cannot inject, modify or replay messages.
+%    \item[Forward secrecy] \hfill \\
+%        A compromised key does not enable reading of previously encrypted messages.
+%    \item[Backward secrecy] \hfill \\
+%        A compromised key does not enable reading of subsequently encrypted messages.
+%    \item[Authorship repudiation] \hfill \\
+%        Given the transcript of a conversation and access to all keys, there is no computationally feasible way to prove that a given message was written by a particular participant.
+%    \item[Participation repudiation] \hfill \\
+%        Given the transcript of a conversation and access to all keys except for one user, there is no computationally feasible way to prove that this user was in a conversation with any of the others.
+%\end{description}
+%
+%The above guarantees make KleeQ one of the most secure protocols to date. At the same time, it has some convenient usability characteristics, for example:
+%\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+%    \item[Support for groups] \hfill \\
+%        Unlike many other solutions, KleeQ supports group communication natively.
+%    \item[Peer-to-peer (P2P)] \hfill \\
+%        The protocol is peer-to-peer, so no additional service provider is required.
+%    \item[Support for asynchrony] \hfill \\
+%        It is possible to send messages to disconnected peers, to be delivered when they go back online again.
+%    \item[Unreliable network resilience] \hfill \\
+%        The protocol was originally proposed for devices with transient connectivity, so it assumes that the network can delay, drop or re-order messages.
+%\end{description}
+%
+%Whilst having an unconventional design, KleeQ strikes a good balance between security characteristics and usability, which seems to be the key trade-off in secure messaging at the moment. \\
+%
+%The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) described the core components of the protocol in sufficient detail, but only provided an unstable proof-of-concept implementation in Python. This project aims to build on their work, with the objectives summarised as follows:
+%\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
+%    \item[Implementation] \hfill \\
+%        Fill out the gaps in the protocol's description and construct a more robust implementation in Java, preserving the security features of the original design.
+%        
+%    \item[Evaluation of Performance] \hfill \\
+%        Use the newly created implementation to evaluate the performance of the protocol and its practicality for use in ubiquitous secure messaging.
+%        
+%    \item[Evaluation of Security] \hfill \\
+%        Understand the limitations of the protocol. See what further work would need to be done to eliminate the remaining attack vectors.
+%        
+%    \item[Messenger Prototype] \hfill \\
+%        Build a prototype of a messaging application based on KleeQ, with the view to assess the usability implications of the protocol.
+%\end{description}
+
+\section{Summary}
+This chapter has shown where this project fits in the field of secure messaging, and described the objectives it expects to meet. The specifics of how these objectives are addressed are described in the following chapters.
 
 \chapter{Preparation}
+\label{ch:prep}
+
+\section{Protocol Description}
+\label{sec:prep.proto}
+
+\subsection{Assumptions}
+KleeQ takes its name from the word ``clique'', which is a graph-theoretic term for a fully connected graph (Figure \ref{fig:clique}).
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale = 0.5]{pics/clique.png}
+    \caption{Clique of size $n = 6$ \label{fig:clique}}
+\end{figure}
+The protocol assumes that conversation participants form a clique (i.e. no two of them are strangers) and that all clique members are trustworthy (i.e. that the problem of Trust Establishment from \cref{sec:intro.overview_sec_mess} has already been solved via other means). 
+
+
+\subsection{Clique formation}
+Every clique has a \emph{common secret} that all participants share and which is regularly updated. When a clique is started, members are added one-by-one. One of the members first creates a singleton clique with a random secret, and then adds other participants. To add a user, one of the clique members performs a Diffie-Hellman key exchange \cite{diffie1976new} with the them, using the current clique secret as the secret exponent, thereby negotiating a new common secret based on the previous one. When other clique members are notified of the new user, they also update their version of the secret. 
+
+Diffie-Hellman is a key exchange protocol that allows two parties to establish a common secret over an insecure channel. It uses two fixed publicly known parameters $G$ and $P$, such that $G$ is a generator of the cyclic group of order $P$. Let's say user Alice is a member of an existing clique with common secret $s$, and she wants to invite user Bob to the conversation. 
+\begin{figure}[h]
+    \captionsetup{width=0.8\textwidth}
+    \centering
+    \includegraphics[width = 0.85 \linewidth]{pics/DH.png}
+    \caption{Adding a new user to an existing clique using Diffie-Hellman key exchange. Public information is in {\color{red}red}, secret -- in {\color{blue}blue}.}
+    \label{fig:DH}
+\end{figure}
+
+She sends Bob the modular exponent $M_{AB} = G^{s} \bmod P$. Upon receiving this message, Bob generates a random number $s_B$ and sends Alice $M_{BA} = G^{s_B} \bmod P$. Bob now computes $s'_B = M_{AB}^{s_B} \bmod P = G^{s \cdot s_B} \bmod P$. When Alice receives Bob's response, she computes $s'_A = M_{BA}^{s} \bmod P = G^{s \cdot s_B} \bmod P$ and updates the clique's common secret to be this new value. Clearly, $s'_A = s'_B = s'$, so Bob now also knows the secret and can use it to participate in the conversation. \\
+
+An adversary who can observe this exchange and see both $M_{AB}$ and $M_{BA}$ has no computationally feasible way to determine the values of $s$ and $s_B$ and cannot compute the common secret $s' = G^{s \cdot s_B}$. The security of Diffie-Hellman relies on the difficulty of the Discrete Logarithm Problem in the chosen cyclic group, so it makes sense to choose parameters $G$ and $P$ to be very large. It is also worth pointing out  that this scheme is clearly vulnerable to a man-in-the-middle attack where an active adversary modifies the values of $M_{AB}$ and $M_{BA}$, essentially impersonating each user to the other one. This can be solved by some form of authentication, but this problem belongs to the realm of Trust Establishment (\cref{sec:intro.overview_sec_mess}) and is therefore outside the scope of KleeQ.
+
+
+\subsection{Exchanging messages}
+Clique members exchange messages through the procedure of \emph{patching}. This process needs two pieces of information that each user maintains -- the current \emph{transcript} of the conversation and the \emph{version vector}. The version vector is a vector of same size as the clique, where each entry corresponds to the number of messages authored by a particular conversation participant. The \emph{patching algorithm} is then as follows: \\ 
+\begin{algorithm}
+\caption{The Patching Algorithm}
+\label{alg:patching}
+{\bfseries Alice}
+\begin{enumerate}
+    \item Sends her version vector $v_A = (v_{A1}, v_{A2}, ..., v_{An})$ to Bob. \\
+\end{enumerate}
+
+{\bfseries Bob}
+\begin{enumerate}
+    \item Calculates the difference between his own version vector and the one sent by Alice, to see what messages she is missing:
+        \begin{equation*}
+            v_{\Delta} = v_B - v_A
+        \end{equation*}
+    \item {Generate a patch to provide the missing messages: \newline \vspace{-5mm}}
+        \begin{algorithmic}
+            \STATE \textit{Patch} $\leftarrow \emptyset$
+            \FOR{$i$ from $1$ to $n$}
+                \IF{$v_{\Delta i} > 0$}
+                    \STATE \textit{Patch.add}(last $v_{\Delta i}$ messages authored by participant $i$)                        
+                \ENDIF
+            \ENDFOR
+        \end{algorithmic}
+    \item Send the \textit{Patch} and version vector $v_B$ to Alice. \\
+\end{enumerate}
+
+{\bfseries Alice}
+\begin{enumerate}
+    \item Insert the messages provided by Bob into transcript.
+    \item As above, compute difference between $v_A$ and $v_B$, to see what messages Bob is missing.
+    \item As above, generate a \textit{Patch} and send it to Bob. \\
+\end{enumerate}
+
+{\bfseries Bob}
+\begin{enumerate}
+    \item Insert the messages provided by Alice into transcript.
+\end{enumerate}
+\end{algorithm}
+
+The above exchange happens regularly between every pair of clique members, and makes sure that their views of the transcript contain the same messages. \\
+
+In order to ensure identical \emph{ordering} of messages in the clique, each participant also maintains a \emph{Lamport timestamp} which is initially set to 0. When two users patch each other as shown above, they update their timestamps to one plus the maximum of their Lamport times. Every time a message is written, it is given the current Lamport time of the author which is then incremented by one. We can thus define a \emph{total order} $<_L$ on messages as follows:
+
+\[
+    <_L(m_1, m_2) = 
+        \begin{cases}
+            \mathtt{TS}(m_1) < \mathtt{TS}(m_2) & \mathtt{TS}(m_1) \neq \mathtt{TS}(m_2) \\
+            <_{lex}(\mathtt{Author}(m_1), \mathtt{Author}(m_2)) & \text{otherwise}
+        \end{cases}
+\]
+
+where $\mathtt{TS}$ is the Lamport timestamp of a message and $<_{lex}$ is lexicographic comparison of authors' names. The $<_L$ relation allows the clique members to arrange all messages in a linear sequence, sorting them by Lamport time and breaking ties by comparing the names of authors lexicographically. \\ 
+
+It can be formally proven \cite{reardon2007kleeq} that exchanging messages as specified by Algorithm \ref{alg:patching} and ordering them using the $<_L$ relation results in all participants converging on the same version of the transcript.
+
+
+\subsection{Transcript verification}
+In an ideal situation, just using the scheme above will allow the clique to converge on a single transcript. However, in the more realistic setting where network errors can occur or a malicious adversary can try to inject fake content, measures must be taken to verify the \emph{integrity} of the conversation. In other words, it is necessary to make sure that all users have the same view of the conversation. This is done using the process of \emph{block sealing}. \\
+
+In brief, the scheme involves the clique members independently dividing the transcript into blocks in a deterministic fashion and \emph{sealing} them by comparing the hashes of their content. For this to work, it is necessary to choose blocks to be sealed in a way which would guarantee that there are no missing messages in them. This task is performed by the \emph{block sealing algorithm} (Algorithm \ref{alg:block_find}).
+
+
+
+\begin{algorithm}
+\caption{The Block Finding Algorithm}
+\label{alg:block_find}
+\textbf{Input}
+\begin{itemize}
+    \item $C$: clique
+    \item $M$: sequence of unsealed messages (\emph{tail}) \\
+\end{itemize}
+
+\textbf{Output}
+\begin{itemize}
+    \item $B$: prefix of $M$ which is a sealable block, or $\emptyset$ if no such block can be found \\
+\end{itemize}
+
+\textbf{Variables}
+\begin{itemize}
+    \item SeenSet: set of uniquely seen authors
+\end{itemize}
+
+
+\textbf{Procedure}
+\vspace{3mm}
+\begin{algorithmic}
+    \STATE Stage 1: calculate the sealable set \vspace{3mm}
+    \STATE
+    \begin{enumerate}
+            \STATE SeenSet $\leftarrow \emptyset$
+            \begin{spacing}{1.2}
+            \FOR{$i$ from $|M|$ down to $1$}
+                \STATE $m \leftarrow M[i]$
+                \STATE $SeenSet \leftarrow SeenSet \cup \{Author(m)\}$
+                \IF{$|SeenSet| = |C|$}
+                    \STATE $S \leftarrow M[1..i]$
+                    \STATE \textbf{break}
+                \ENDIF
+            \ENDFOR
+            \IF{$|SeenSet| \neq |C|$}
+                \RETURN $\emptyset$
+            \ENDIF
+            \end{spacing}    
+    \end{enumerate}
+    \STATE \textbf{Stage 2: computing the sealable block \vspace{3mm}}
+    \begin{enumerate} \setcounter{enumi}{3}
+        \STATE SeenSet $\leftarrow \emptyset$
+        \begin{spacing}{1.2}
+        \FOR{$i$ from $1$ up to $|S|$}
+            \STATE $m \leftarrow S[i]$
+            \STATE $SeenSet \leftarrow SeenSet \cup \{Author(m)\}$
+            \IF{$|SeenSet| = |C|$}
+                \RETURN $S[1..i]$
+            \ENDIF
+        \ENDFOR
+        \end{spacing}
+        \vspace{-2mm}
+        \RETURN $\emptyset$
+    \end{enumerate}
+
+\end{algorithmic}
+
+
+
+
+
+\end{algorithm}
+
+
+\subsection{Key management}
+
+\section{Requirements Analysis}
+
+\section{Preliminary System Design}
+
+\section{Implementation Strategy}
+
+\section{Libraries and Tools}
+
+\section{Summary}
+
+
 
 
 \chapter{Implementation}
