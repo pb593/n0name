@@ -17,10 +17,11 @@
 \usepackage[noend]{algorithmic}
 \usepackage{setspace}
 
+
 \usepackage{blindtext}
 \usepackage[ttdefault=true]{AnonymousPro}
 
-\usepackage[toc]{appendix}
+\usepackage[toc, page]{appendix}
 
 \usepackage{standalone}
 
@@ -204,6 +205,7 @@ The protocol assumes that conversation participants form a clique (i.e. no two o
 
 
 \subsection{Clique formation}
+\label{subsec:formation}
 Every clique has a \emph{common secret} that all participants share and which is regularly updated. When a clique is started, members are added one-by-one. One of the members first creates a singleton clique with a random secret, and then adds other participants. To add a user, one of the clique members performs a Diffie-Hellman key exchange \cite{diffie1976new} with the them, using the current clique secret as the secret exponent, thereby negotiating a new common secret based on the previous one. When other clique members are notified of the new user, they also update their version of the secret. 
 
 Diffie-Hellman is a key exchange protocol that allows two parties to establish a common secret over an insecure channel. It uses two fixed publicly known parameters $G$ and $P$, such that $G$ is a generator of the cyclic group of order $P$. Let's say user Alice is a member of an existing clique with common secret $s$, and she wants to invite user Bob to the conversation. 
@@ -221,6 +223,7 @@ An adversary who can observe this exchange and see both $M_{AB}$ and $M_{BA}$ ha
 
 
 \subsection{Exchanging messages}
+\label{subsec:prep.patching}
 Clique members exchange messages through the procedure of \emph{patching}. This process needs two pieces of information that each user maintains -- the current \emph{transcript} of the conversation and the \emph{version vector}. The version vector is a vector of same size as the clique, where each entry corresponds to the number of messages authored by a particular conversation participant. The \emph{patching algorithm} is then as follows: \\ 
 \begin{algorithm}
 \caption{The Patching Algorithm}
@@ -263,7 +266,7 @@ Clique members exchange messages through the procedure of \emph{patching}. This 
 
 The above exchange happens regularly between every pair of clique members, and makes sure that their views of the transcript contain the same messages. \\
 
-In order to ensure identical \emph{ordering} of messages in the clique, each participant also maintains a \emph{Lamport timestamp} which is initially set to 0. When two users patch each other as shown above, they update their timestamps to one plus the maximum of their Lamport times. Every time a message is written, it is given the current Lamport time of the author which is then incremented by one. We can thus define a \emph{total order} $<_L$ on messages as follows:
+In order to ensure identical \emph{ordering} of messages in the clique, each participant also maintains a \emph{Lamport timestamp} which is initially set to 0. When two users patch each other as shown above, they update their timestamps to one plus the maximum of their Lamport times. Every time a message is written, it is given the current Lamport time of the author which is then incremented by one. We can thus define a \emph{total order} $<_L$ on messages as follows:\\
 
 \[
     <_L(m_1, m_2) = 
@@ -271,7 +274,7 @@ In order to ensure identical \emph{ordering} of messages in the clique, each par
             \mathtt{TS}(m_1) < \mathtt{TS}(m_2) & \mathtt{TS}(m_1) \neq \mathtt{TS}(m_2) \\
             <_{lex}(\mathtt{Author}(m_1), \mathtt{Author}(m_2)) & \text{otherwise}
         \end{cases}
-\]
+\] \\
 
 where $\mathtt{TS}$ is the Lamport timestamp of a message and $<_{lex}$ is lexicographic comparison of authors' names. The $<_L$ relation allows the clique members to arrange all messages in a linear sequence, sorting them by Lamport time and breaking ties by comparing the names of authors lexicographically. \\ 
 
@@ -279,11 +282,14 @@ It can be formally proven \cite{reardon2007kleeq} that exchanging messages as sp
 
 
 \subsection{Transcript verification}
-In an ideal situation, just using the scheme above will allow the clique to converge on a single transcript. However, in the more realistic setting where network errors can occur or a malicious adversary can try to inject fake content, measures must be taken to verify the \emph{integrity} of the conversation. In other words, it is necessary to make sure that all users have the same view of the conversation. This is done using the process of \emph{block sealing}. \\
+\label{subsec:prep.sealing}
+In an ideal situation, just using the scheme above will allow the clique to converge on the correct single transcript. However, in the more realistic setting where network errors can occur or a malicious adversary can try to inject fake content, measures must be taken to verify the \emph{integrity} of the conversation. In other words, it is necessary to make sure that all users have the same view of the conversation. This is done using the process of \emph{block sealing}. \\
 
-In brief, the scheme involves the clique members independently dividing the transcript into blocks in a deterministic fashion and \emph{sealing} them by comparing the hashes of their content. For this to work, it is necessary to choose blocks to be sealed in a way which would guarantee that there are no missing messages in them. This task is performed by the \emph{block sealing algorithm} (Algorithm \ref{alg:block_find}).
+In brief, the scheme involves the clique members independently dividing the transcript into blocks in a deterministic fashion and \emph{sealing} them by comparing the hashes of their content. For this to work correctly, it is necessary to choose blocks to be sealed in a way which would guarantee that all messages in them have been received and none are missing. This task is performed by the \emph{block finding algorithm} (Algorithm \ref{alg:block_find}). \\
 
+Intuitively, in Stage 1 the algorithms scans the unsealed part of the transcript (its \emph{tail}) backwards, starting with most recent messages, until it has seen at least one message authored by each of the clique members. Because of how the patching algorithm works, it is certain that the remaining, less recent part of the transcript (also referred to as the \emph{sealable set}) contains no missing messages. In Stage 2, blocks are extracted from the sealable set by scanning it in chronological order and taking the smallest message subsequence in which every user has authored at least one message. There is a formal proof \cite{reardon2007kleeq}, omitted here for brevity, that this algorithm allows the clique members to compute identical blocks independently. {\color{red} Pic to illustrate this?}\\
 
+Every block is given a sequential number. When a block is found, the concatenation of its sequential number and its messages are hashed to compute the \emph{fingerprint} of the block, which the clique members then verify with each other. After verification, the sealed blocks are \emph{safely deleted}, which is partly how forward secrecy is achieved.
 
 \begin{algorithm}
 \caption{The Block Finding Algorithm}
@@ -308,7 +314,7 @@ In brief, the scheme involves the clique members independently dividing the tran
 \textbf{Procedure}
 \vspace{3mm}
 \begin{algorithmic}
-    \STATE Stage 1: calculate the sealable set \vspace{3mm}
+    \STATE \textbf{\textit{Stage 1: calculating the sealable set \vspace{3mm}}}
     \STATE
     \begin{enumerate}
             \STATE SeenSet $\leftarrow \emptyset$
@@ -326,7 +332,7 @@ In brief, the scheme involves the clique members independently dividing the tran
             \ENDIF
             \end{spacing}    
     \end{enumerate}
-    \STATE \textbf{Stage 2: computing the sealable block \vspace{3mm}}
+    \STATE \textbf{\textit{Stage 2: finding a block \vspace{3mm}}}
     \begin{enumerate} \setcounter{enumi}{3}
         \STATE SeenSet $\leftarrow \emptyset$
         \begin{spacing}{1.2}
@@ -345,24 +351,160 @@ In brief, the scheme involves the clique members independently dividing the tran
 \end{algorithmic}
 
 
-
-
-
 \end{algorithm}
-
-
 \subsection{Key management}
+\label{subsec:prep.keyman}
+As described in \cref{subsec:formation}, each clique has a common secret. This secret is used to derive the \emph{key} which is then used to encrypt and authenticate the communication. The secret and the key are updated on multiple occasions. Initially, the key is calculated as:
+\begin{equation*}
+    k \leftarrow MAC_{s}(cliqueName)
+\end{equation*}
+where $s$ is the initial random secret and $cliqueName$ is the public name of the clique that is known to all participants. \\ 
+
+When a new participant is added, the secret gets renegotiated as per \cref{subsec:formation}, and the key is also recomputed: \\
+\[
+    s_{i+1} \leftarrow G^{s_i \cdot s_{other}} \bmod P  \\ 
+\]
+\[
+    k_{i+1} \leftarrow MAC_{s_{i+1}}(cliqueName)
+\] \\
+
+
+The key also gets rotated when a block is sealed:
+\[
+    s_{i+1} \leftarrow MAC_{k_i}(s_i) \\ 
+\]
+\[
+    k_{i+1} \leftarrow MAC_{s_{i+1}}(block\_content)
+\] \\
+
+The resulting chain of secrets and keys can be schematically summarised as follows:
+{ 
+    {\color{red} Schamatic pic here!}
+} \\ 
+Note that the key rotation scheme helps us achieve both forward and backward secrecy. Given a compromised key, extracting the previous one is essentially equivalent to online inversion of a hash function, whereas computing the next key in the chain would require the adversary to also know the current secret.
+
+
+\subsection{Message Format}
+\label{ssec:prep.proto.msg_fmt}
+Another issue that we need to solve is addressing. When a KleeQ instance receives an encrypted message, it needs to determine which clique it belongs to. This is done using \emph{address tags}, which is something that each clique has at all times. It is always equal to:
+\begin{equation*}
+    c_{id} = MAC_{k}(cliqueName)
+\end{equation*} \\
+This tag is at the beginning of every transmission and in conjunction with a look-up table of address tags can be used by a KleeQ instance to demultiplex messages into appropriate cliques as they arrive. As keys are rotated, old address tags are removed from the look-up table and new ones are added.\\
+
+In addition, to protect the content of the communication from being viewed and/or modified by the adversary, we need to encrypt and authenticate all messages using the current clique key. Following the recommended practices, we first encrypt the message and then MAC the concatenation of the ciphertext and the clique name. This allows to discard messages if they do not pass integrity checks, without attempting to decrypt them first.
+
+Eventually, for a message $m$ we transmit the following:
+\begin{equation*}
+    T = c_{id} || E_k(m) || MAC_k(cliqueName || E_k(m))
+\end{equation*}
+Replay attacks are prevented by each $m$ containing the name of the author, name of the recipient and the sender's Lamport time.
 
 \section{Requirements Analysis}
+\label{sec:prep.requirements}
+The requirements for the project follow directly from the aims outlined in \cref{sec:intro.aims} and success criteria mentioned in the proposal\footnote{See Appendix \ref{appendix:proposal}}. They can be summarised as follows:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Implementing the protocol] \hfill \\
+        Implement the protocol exactly as specified in \cref{sec:prep.proto}, ensuring that all of its security guarantees still hold, namely:
+        \begin{itemize}
+            \item confidentiality of message content
+            \item message integrity
+            \item forward secrecy
+            \item backward secrecy
+            \item message authorship repudiation
+            \item conversation participation repudiation
+        \end{itemize}
+
+
+    \item[Construct a useable messaging application] \hfill \\
+        Build a simple messaging application based in our protocol implementation.     
+\end{description}
+It is worth pointing out that these two items are mutually dependent -- implementing and debugging the protocol requires some kind of messenger prototype to be in place. This circumstance was identified early on and taken into account when planning the work (\cref{sec:prep.impl_strat}). \\
+
 
 \section{Preliminary System Design}
+\label{sec:prep.design}
+Some early architecture design was done before any code was written. In particular, the main classes of the implementation were conceived and thought through, and some of the additional external components necessary for operation of the protocol were engineered.
+\subsection{Secondary components}
+In order to implement and run KleeQ, it was necessary to address some secondary practical issues first. These issues are:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Contact Discovery] \hfill \\
+        How do we know where our peers reside? Which IP-addresses do we send messages to?
+    \item[Transport] \hfill \\
+        How do we send messages to peers are not publicly addressable on the Internet? What if they have a non-pubic IP-address (e.g. if they are behind a NAT)?
+\end{description}
+
+Both of these issues can be solved in a completely distributed fashion in a ``pure'' P2P way (e.g. using distributed hash tables), but in order to meet the time constraints of this project it was decided to use a centralised server-based solution. \\
+
+For the purpose of running KleeQ two server ``scaffolding'' applications were designed:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Address Book]\hfill \\
+        This component keeps track of users' IP-addresses. All KleeQ instances perform a \emph{check-in} every once in a while, thereby updating the records in the address book. 
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width = 0.6 \linewidth]{pics/addressBook.png}
+            \caption{\label{fig:addressBook}Operation of the Address Book}
+        \end{figure}
+        Other users query the address book when they need to send a message, and get the current IP-address of the destination.
+
+    \item[Store-and-Forward Service] \hfill \\
+        This application is used as a relay station to leave messages to be collected by other users later. It operates as a collection of ``pigeonholes'' where users put messages when they want to communicate and which are emptied by recipient every once in a while. 
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width = 0.6 \linewidth]{pics/saf.png}
+            \caption{\label{fig:addressBook}Operation of the Store-and-Forward Service}
+        \end{figure}
+        This scheme allows communication between users who do not have public IP-addresses, since the connection to the store-and-forward is always initiated by the client.
+\end{description}
+
+
+\subsection{Object-oriented design}
+In order to make writing code easier, a rough object-oriented design of the core part of the client application was produced. It consists of the three most important classes -- Communicator, Client and Clique.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 0.7 \linewidth]{pics/core_uml.png}
+    \caption{\label{fig:core_uml} Core part of the client application}
+\end{figure}
+
+Each of these three classes are \emph{active}, i.e. they are running as separate threads. Communicator is in charge of sending and receiving messages (directly via TCP or via Store-and-Forward). When a message is received, the Communicator gives a callback to class Client which demultiplexes the message into the appropriate Clique (as specified in \cref{ssec:prep.proto.msg_fmt}) by redirecting the callback to it. Class Clique is responsible for performing most of the actual protocol (as per \cref{sec:prep.proto}), including patching, sealing, key management etc. When Clique needs to send a message, it uses the Communicator for this. Apart from re-directing messages to the right cliques, the Client class is also handing the interaction with the user (e.g. command-line interface or GUI).
 
 \section{Implementation Strategy}
+\label{sec:prep.impl_strat}
+It became clear early on that before commencing the implementation of the actual protocol required the following preparatory steps to be taken:
+\begin{itemize}
+    \item Building and testing the ``scaffolding'' server components, i.e. the Address Book and the Store-and-Forward.
+    \item Implementing the transport functionality on the client side (class Communicator in Figure \ref{fig:core_uml}).
+    \item Preparing a simple command-line interface to be able to test different parts of the code without changing it (part of class Client in Figure \ref{fig:core_uml}).
+\end{itemize}
 
-\section{Libraries and Tools}
+Given the small size and relatively low complexity of the tasks above, it was decided to implement these parts of the project following the \emph{waterfall model} -- do the design work upfront and write the code to fit the specifications. \\
+
+Implementing KleeQ itself required a more flexible approach and the \emph{iterative model} was chosen. The plan was to produce a series of prototypes, adding features incrementally:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Prototype 0: Basic Communication]\hfill \\
+        Send strings back and forth between two instances of the program through Store-and-Forward and directly via TCP. Make sure all the preparatory code is functioning properly.
+    \item[Prototype 1: Clique Formation]\hfill \\
+        Implement clique formation (\cref{subsec:formation}). Make sure users compute the shared secret correctly.
+    \item[Prototype 2: Patching]\hfill \\
+        Instead of sending messages directly, use the patching algorithm (\cref{subsec:prep.patching}). Make sure users converge on a single transcript.
+    \item[Prototype 3: Sealing]\hfill \\
+        Verify the global transcript via the process of block sealing (\cref{subsec:prep.sealing}). Make sure the blocks are calculated, verified and deleted correctly.
+    \item[Prototype 4: Key Management]\hfill \\
+        Improve key management by implementing key rotation (\cref{subsec:prep.keyman}). Make sure rotation of address tags (\cref{ssec:prep.proto.msg_fmt}) does not disrupt communication.
+\end{description}
+
+\section{Choice of Technology, Libraries and Tools}
+The technology and libraries were carefully chosen so as to make the development process more smooth, as well as to allow for some flexibility and modularity.
+
+\subsection{Server side}
+Server-based components were implemented in Python, using the RESTful HTTP framework called Flask\footnote{\url{http://flask.pocoo.org}}. For the purpose of running the code, a cloud server was rented from the PaaS provider PythonAnywhere\footnote{\url{https://www.pythonanywhere.com/}}. As noted before, most of the server-side development needed to be done before writing any client code, so the testing was performed manually, using a simple utility called Postman\footnote{\url{https://www.getpostman.com/}} which allows sending custom HTTP requests and receive responses. Programming in Python was done in PyCharm IDE.
+
+\subsection{Client side}
+The client-side code was written in Java, using the IntelliJ IDE. Messages were serialised into JSON strings using the json.simple\footnote{\url{https://github.com/fangyidong/json-simple}} library. The graphical interface was built using the Swing framework. The project relied on \texttt{git} for VCS, and the back-up strategy involved regular uploads to GitHub and copying to an external hard drive.
 
 \section{Summary}
-
+This chapter has described the KleeQ protocol in full detail (\cref{sec:prep.proto}), presented the formal requirements for this project (\cref{sec:prep.proto}), familiarised the reader with the early design work (\cref{sec:prep.design}) and the planning (\cref{sec:prep.impl_strat}) that was performed before any code was written. The next chapter provides further detail of design and elaborates on some interesting aspects of the implementation.
 
 
 
@@ -382,6 +524,7 @@ In brief, the scheme involves the clique members independently dividing the tran
 
 \begin{appendices}
 \chapter{Project Proposal}
+\label{appendix:proposal}
 \section{Introduction and Description of the Work}
 \label{intro}
 The recent public outcry in response to mass surveillance programs carried out by governments around the world led to creation of multiple messaging systems which emphasised security of communication. Some have been more successful than others, but each of them has been found to have some flaws or deficiencies. Broadly speaking, there are four problems that each security-oriented messenger needs to solve:
