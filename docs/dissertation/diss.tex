@@ -25,11 +25,38 @@
 
 \usepackage{standalone}
 
+\usepackage{listings}
+
 \usepackage{cleveref}
 \crefname{section}{\S}{\S\S}
 \Crefname{section}{\S}{\S\S}
 
 
+% listings
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+\lstdefinestyle{mystyle}{  
+    commentstyle=\color{deepgreen},
+    keywordstyle=\color{deepblue},
+%    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{deepred},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=shadowbox
+}
+ 
+\lstset{style=mystyle}
 
 \newcommand{\skippage}{\newpage\null\newpage}
 
@@ -471,7 +498,7 @@ Each of these three classes are \emph{active}, i.e. they are running as separate
 
 \section{Implementation Strategy}
 \label{sec:prep.impl_strat}
-It became clear early on that before commencing the implementation of the actual protocol required the following preparatory steps to be taken:
+It became clear early on that before commencing the implementation of the actual protocol the following preparatory steps needed to be taken:
 \begin{itemize}
     \item Building and testing the ``scaffolding'' server components, i.e. the Address Book and the Store-and-Forward.
     \item Implementing the transport functionality on the client side (class Communicator in Figure \ref{fig:core_uml}).
@@ -482,16 +509,18 @@ Given the small size and relatively low complexity of the tasks above, it was de
 
 Implementing KleeQ itself required a more flexible approach and the \emph{iterative model} was chosen. The plan was to produce a series of prototypes, adding features incrementally:
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
-    \item[Prototype 0: Basic Communication]\hfill \\
-        Send strings back and forth between two instances of the program through Store-and-Forward and directly via TCP. Make sure all the preparatory code is functioning properly.
+%    \item[Prototype 0: Basic Communication]\hfill \\
+%        Send strings back and forth between two instances of the program through Store-and-Forward and directly via TCP. Make sure all the preparatory code is functioning properly.
     \item[Prototype 1: Clique Formation]\hfill \\
-        Implement clique formation (\cref{subsec:formation}). Make sure users compute the shared secret correctly.
+        Implement clique formation (\cref{subsec:formation}). Make sure users compute the shared secret correctly. Add cryptography.
     \item[Prototype 2: Patching]\hfill \\
         Instead of sending messages directly, use the patching algorithm (\cref{subsec:prep.patching}). Make sure users converge on a single transcript.
     \item[Prototype 3: Sealing]\hfill \\
         Verify the global transcript via the process of block sealing (\cref{subsec:prep.sealing}). Make sure the blocks are calculated, verified and deleted correctly.
     \item[Prototype 4: Key Management]\hfill \\
         Improve key management by implementing key rotation (\cref{subsec:prep.keyman}). Make sure rotation of address tags (\cref{ssec:prep.proto.msg_fmt}) does not disrupt communication.
+    \item[Prototype 5: Interface] \hfill \\
+        Enhance user interaction by building a GUI. Prepare for automated evaluation by constructing a ``machine interface'' for use by testing scripts. 
 \end{description}
 
 \section{Choice of Technology, Libraries and Tools}
@@ -509,6 +538,107 @@ This chapter has described the KleeQ protocol in full detail (\cref{sec:prep.pro
 
 
 \chapter{Implementation}
+{\color{red} Roadmap?}
+\section{Preparatory coding}
+As explained in the previous chapter, implementing KleeQ as described in \cref{sec:prep.proto} required some other code to be written first. In particular, the following components needed to be built and tested:
+\begin{itemize}
+    \item server Python applications (Address Book and Store-and-Forward)
+    \item client-side code for interacting with the server
+    \item a command-line interface (CLI) for basic group chat operations
+\end{itemize}
+The next few sections describe in detail how these tasks were performed.
+
+\subsection{Server-side applications}
+This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. \\
+
+The Address Book and the Store-and-Forward (SaF) service were implemented using Flask, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
+
+\begin{lstlisting}[language = Python, columns=fullflexible]
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/hello/<userID>")
+def welcome(userID):
+    return "Hello and welcome, %s!\n" % (userID)
+    
+if __name__ == "__main__":
+    app.run()
+\end{lstlisting}
+
+
+The framework allows to define callback functions which get invoked when an HTTP request is received for a particular URL. For example, if the program above were running on \url{www.example.com} (on port 80), then typing \url{www.example.com/hello/Pavel} into the browser would result in the function above being called and the text "Hello and welcome, Pavel!" displayed. \\
+
+Any complex server behaviour can be achieved in a similar way. This kind of system design is called \emph{Representational State Transfer} (REST) -- requests are encoded as access requests for some resource.  All functions of our server applications are defined in this RESTful way -- they are callbacks whose invocation is triggered by HTTP requests for specific URLs, which makes the code very easy to debug using a browser.
+
+\subsubsection{Address Book}
+This application is essentially an online look-up table which is used by client applications to record their \emph{network addresses} (IP-address and port) from time to time (\emph{"check-in"}), so that their peers knew where to send messages for them. The service has 3 commands:
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.9\textwidth}{l | c | l}
+    Command & Arguments & Function \\
+    \hline
+    check-in & userID, IP:port& Records address of a particular user \\
+    lookup & userID & Returns the address of a given user \\
+    display & --  & Returns addresses of all known users \\
+\end{tabular*}
+\caption{\label{tab:address_book} Functionality of the Address Book}
+\end{table}
+
+All of these commands are defined as Flask callback, similar to the example above. The implementation is based on a hash map (or dictionary, in Python parlance) which maps unique user names (\emph{userIDs}) to network address strings. When a user checks-in, their record is updated. In addition, every record contains the time of last check-in which is used to clear out stale records as users go offline. If a check-in happens from an IP-address belonging to the private range, then the system records it as "0.0.0.0:0", which serves as a signal for everyone that this user cannot be reached directly and all communication with them should be happening through the store-and-forward service.
+
+\subsubsection{Store-an-Forward}
+The operation of this component is analogous to that of a pigeonhole area at a Cambridge college. Users leave their communications (encrypted or otherwise) in ``pigeonholes'' marked with unique userIDs which are regularly emptied by their owners. The purpose of this arrangement is to facilitate communication in cases when a direct TCP connection cannot be easily made (e.g. when the destination resides behind a NAT). Table \ref{tab:saf} presents the function set of the service.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.9\textwidth}{l | c | l}
+    Command & Arguments & Function \\
+    \hline
+    store & userID, msg & Stores a message for a given user \\
+    retrieve & userID & Returns all messages for user, clears postbox\\
+    view & userID & Returns all messages for a specific user \\
+\end{tabular*}
+\caption{\label{tab:saf} Functionality of the Address Book}
+\end{table}
+
+As before, each command is implemented as a Flask callback procedure. The implementation is based on a hash map where userIDs are keys and lists of base64-encoded message strings are values.
+
+
+\subsection{Client-side API for server applications}
+As mentioned before, the server applications use HTTP to communicate with the outside world. To access the commands of the services from the client application, a Java API has been built. It is a collection of static methods contained in 3 classes, which provide a convenient interface to the server components by sending the appropriate HTTP requests.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 0.7 \linewidth]{pics/scaffolding_uml.png}
+    \caption{\label{fig:scaffolding_uml} Class diagram of the API to server components}
+\end{figure}
+In Figure \ref{fig:scaffolding_uml}, class HTTPHandler implements the functionality for sending HTTP GET and POST requests. These two methods are used by classes AddressBook and StoreAndForward to access the commands of the server applications. The rest of the client-side code can therefore use these classes to communicate with the server components as if they were available locally (\emph{access transparency}). \\
+
+In an early implementation of the AddressBook class, the methods \texttt{lookup()} and \texttt{contains()} were sending an HTTP request to the server upon every invocation which considerably slowed down the whole program. To solve this problem, a simple \emph{caching system} was built-in -- the class downloads the whole address book from the server every few seconds, and the methods use this downloaded copy to compute their results. This means that the methods may return results that are slightly stale, but this does not cause any issues for KleeQ due to its inherently asynchronous nature. \\
+
+%Each client instance contains an \emph{address-reporting thread} which calls the \texttt{checkin()} method from time to time, to update the server records about itself.
+
+\subsection{Client-side transport code}
+The interface described above is primarily used by the Communicator class (see Figure \ref{fig:core_uml}), which is responsible for transport and connectivity.
+
+
+\subsection{A simple CLI}
+
+
+\section{Protocol implementation}
+\subsection{Prototype 1: Clique Formation}
+
+\subsection{Prototype 2: Patching}
+
+
+\subsection{Prototype 3: Sealing}
+
+
+\subsection{Prototype 4: Key Management}
+
+
+\subsection{Prototype 5: Interface}
 
 
 \chapter{Evaluation}

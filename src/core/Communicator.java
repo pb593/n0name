@@ -116,6 +116,7 @@ class Communicator extends Thread {
                     Socket skt = new Socket(dest.getAddress(), dest.getPort());
                     PrintWriter writer = new PrintWriter(skt.getOutputStream(), true);
                     writer.println(urlSafeString);
+                    writer.flush();
                     return true;
                 }
             } catch (IOException e) {

@@ -4,7 +4,6 @@ import message.*;
 import message.patching.UpdateRequestMessage;
 import message.patching.UpdateResponseMessage;
 import message.sealing.SealSignalMessage;
-import org.apache.commons.lang3.StringUtils;
 import scaffolding.AddressBook;
 import scaffolding.Utils;
 
