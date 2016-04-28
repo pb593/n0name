@@ -58,6 +58,9 @@
  
 \lstset{style=mystyle}
 
+% math 
+\newcommand\floor[1]{\lfloor#1\rfloor}
+
 \newcommand{\skippage}{\newpage\null\newpage}
 
 \newcommand*{\titleTH}{ % title page
@@ -232,7 +235,7 @@ The protocol assumes that conversation participants form a clique (i.e. no two o
 
 
 \subsection{Clique formation}
-\label{subsec:formation}
+\label{subsec:prep.formation}
 Every clique has a \emph{common secret} that all participants share and which is regularly updated. When a clique is started, members are added one-by-one. One of the members first creates a singleton clique with a random secret, and then adds other participants. To add a user, one of the clique members performs a Diffie-Hellman key exchange \cite{diffie1976new} with the them, using the current clique secret as the secret exponent, thereby negotiating a new common secret based on the previous one. When other clique members are notified of the new user, they also update their version of the secret. 
 
 Diffie-Hellman is a key exchange protocol that allows two parties to establish a common secret over an insecure channel. It uses two fixed publicly known parameters $G$ and $P$, such that $G$ is a generator of the cyclic group of order $P$. Let's say user Alice is a member of an existing clique with common secret $s$, and she wants to invite user Bob to the conversation. 
@@ -387,7 +390,7 @@ As described in \cref{subsec:formation}, each clique has a common secret. This s
 \end{equation*}
 where $s$ is the initial random secret and $cliqueName$ is the public name of the clique that is known to all participants. \\ 
 
-When a new participant is added, the secret gets renegotiated as per \cref{subsec:formation}, and the key is also recomputed: \\
+When a new participant is added, the secret gets renegotiated as per \cref{subsec:prep.formation}, and the key is also recomputed: \\
 \[
     s_{i+1} \leftarrow G^{s_i \cdot s_{other}} \bmod P  \\ 
 \]
@@ -512,7 +515,7 @@ Implementing KleeQ itself required a more flexible approach and the \emph{iterat
 %    \item[Prototype 0: Basic Communication]\hfill \\
 %        Send strings back and forth between two instances of the program through Store-and-Forward and directly via TCP. Make sure all the preparatory code is functioning properly.
     \item[Prototype 1: Clique Formation]\hfill \\
-        Implement clique formation (\cref{subsec:formation}). Make sure users compute the shared secret correctly. Add cryptography.
+        Implement clique formation (\cref{subsec:prep.formation}). Make sure users compute the shared secret correctly. Add encryption and authentication.
     \item[Prototype 2: Patching]\hfill \\
         Instead of sending messages directly, use the patching algorithm (\cref{subsec:prep.patching}). Make sure users converge on a single transcript.
     \item[Prototype 3: Sealing]\hfill \\
@@ -549,7 +552,7 @@ As explained in the previous chapter, implementing KleeQ as described in \cref{s
 The next few sections describe in detail how these tasks were performed.
 
 \subsection{Server-side applications}
-This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. \\
+This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. Both server components are small HTTP services -- the choice of protocol has been motivated by a good selection of third-party libraries for HTTP communication and the fact that it usually is not blocked by firewalls.\\
 
 The Address Book and the Store-and-Forward (SaF) service were implemented using Flask, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
 
@@ -610,7 +613,7 @@ As mentioned before, the server applications use HTTP to communicate with the ou
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width = 0.7 \linewidth]{pics/scaffolding_uml.png}
+    \includegraphics[width = 0.8 \linewidth]{pics/scaffolding_uml.png}
     \caption{\label{fig:scaffolding_uml} Class diagram of the API to server components}
 \end{figure}
 In Figure \ref{fig:scaffolding_uml}, class HTTPHandler implements the functionality for sending HTTP GET and POST requests. These two methods are used by classes AddressBook and StoreAndForward to access the commands of the server applications. The rest of the client-side code can therefore use these classes to communicate with the server components as if they were available locally (\emph{access transparency}). \\
@@ -620,14 +623,164 @@ In an early implementation of the AddressBook class, the methods \texttt{lookup(
 %Each client instance contains an \emph{address-reporting thread} which calls the \texttt{checkin()} method from time to time, to update the server records about itself.
 
 \subsection{Client-side transport code}
-The interface described above is primarily used by the Communicator class (see Figure \ref{fig:core_uml}), which is responsible for transport and connectivity.
+The interface described above is primarily used by the Communicator class (see Figure \ref{fig:core_uml}), which is responsible for transport and connectivity. The class contains three threads that are perpetually running:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Address-reporting thread] \hfill \\
+        Calls the Address Book \texttt{checkin()} method every few seconds, to update/renew the server records about the address of the client. If the Address Book is unreachable then the client assumes it is offline.
+    \item[SaF Querying Thread] \hfill \\
+        Calls the StoreAndForward \texttt{retrieve()} function every few seconds, and gives a callback to the Client class for each of the new messages.
+    \item[TCP Socket Server Thread] \hfill \\
+        Listens on a port (randomly chosen at start up) for direct TCP connections, also giving callbacks to the Client class as messages arrive.
+\end{description}
+At this point, the reader may be wondering why threads for \emph{both} direct TCP transmission and for SaF run at the same time. Indeed, as of now communication happens only though one of the two -- it is direct (via TCP) if the client is running on a public IP-address, and via SaF otherwise. However, it is worth noticing that it may be possible to connect two client directly even when they are not publicly addressable if they happen to reside on the \emph{same local network}. This feature has not been implemented so far, but would definitely be useful in the future. \\
+
+\begin{figure}[H]
+\centering
+\includegraphics[width = 0.8 \linewidth]{pics/communicator_uml.png}
+\caption{\label{fig:communicator_uml} Operation of the Communicator class}
+\end{figure}
+
+
+The Communicator class also contains a \texttt{send()} method which uses the data in the Address Book to decide which of the two transport options (direct TCP or SaF) to use for the given destination, and sends the message. The method returns a boolean value, depending on whether transmission has been successful (sending could fail e.g. if client is offline).
 
 
 \subsection{A simple CLI}
+The primary reason for building this component was to be able to test various aspects of the KleeQ's operation just by typing commands, without changing the source code. In addition, upfront design of a CLI helped understand what use-cases need to be handled. \\
+
+The design involved defining a minimal set of operations that a group messaging application needs to have. The corresponding commands are shown in Table \ref{tab:CLI}.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.9\textwidth}{l | l | l}
+    Command & Arguments & Function \\
+    \hline
+    \multicolumn{3}{c}{\textbf{Main menu commands}} \\
+    \hline
+    <empty> & -- & Refresh \\
+    create & groupName & Create a new group with given name \\
+    add & userID, groupName & Add a specific user to a given group \\
+    view & groupName & View a particular group (\emph{group view}) \\
+    help & -- & Display a help message \\
+    exit & -- & Terminate the program \\
+    \hline
+    \multicolumn{3}{c}{\textbf{Group view commands}} \\
+    \hline 
+    <empty> & -- & Refresh \\
+    msg & msgText & Send a message to current group \\
+    back & -- & Go back to main menu \\
+    add & userID & Add a specific user to current group \\
+    help & -- & Display a help message \\
+    exit & -- & Terminate the program \\ 
+\end{tabular*}
+\caption{\label{tab:CLI} Command-line interface}
+\end{table}
+The implementation of the interface above is contained in the CLIClient class which is a subclass of Client (Figure \ref{fig:CLIClient_uml}).
+\begin{figure}[H]
+\centering
+\includegraphics[width = 0.31 \linewidth]{pics/CLIClient_uml.png}
+\caption{\label{fig:CLIClient_uml} The CLI is implemented in the class CLIClient}
+\end{figure}
+This proved to be very convenient later on, since implementing other types of interfaces (e.g. GUI) could be neatly done by creating another subclass of Client and writing a different version of the \texttt{run()} method.
+
+The logic of the interface was coded as an infinite loop which takes keyboard input, breaks it down into terms and then tries to match them against a sequence of conditionals that correspond to different commands. If a match happens, the appropriate functions are called and relevant output is given.
 
 
 \section{Protocol implementation}
+Once the ``scaffolding'' (server components and CLI) was completed, it became possible to proceed with the implementation of KleeQ itself, as described in \cref{sec:prep.proto}.
+
+
 \subsection{Prototype 1: Clique Formation}
+Building this prototype involved implementing the procedure for creating a new clique and adding users to it. In CLI terms, it meant implementing the logic of the \texttt{create} and \texttt{add} commands. This required the following tasks to be completed:
+
+\begin{itemize}
+    \item Designing an object-oriented representation for a clique such that it neatly fits into the previous design.
+    \item Working out the exact mechanics for adding a new user, based on the description in \cref{subsec:prep.formation}. Performing the necessary pieces of object-oriented design to model this process.
+    \item Choosing the cryptographic methods to be used for Diffie-Hellman key-exchange, encryption and message authentication. Implementing them in the object-oriented fashion that would work well with the rest of the design.
+\end{itemize}
+
+The next few sections address these three tasks in more detail.
+
+\subsubsection{Object-oriented clique model}
+A clique is modelled by the Clique class (Figure \ref{fig:clique_uml}) which contains all the group-specific information and implements most of the protocol's logic. Instances of the class are stored in a hash map (clique name to Clique instance) contained in the Client class, and its methods are called by the UI code when the user issues a command. In addition, Client also contains a hash map that maps \emph{address tags} (\cref{ssec:prep.proto.msg_fmt}) to clique names, which is used for demultiplexing encrypted messages into destination cliques as they arrive.
+\begin{figure}[H]
+    %\captionsetup{width=0.8\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{pics/clique_uml.png}
+    \caption{\label{fig:clique_uml} The Clique class models a communication group.}
+\end{figure}
+
+\subsubsection{Messages for adding users}
+As mentioned in \cref{sec:prep.proto}, KleeQ solves the key distribution problem via the Diffie-Hellman key exchange protocol. However, apart from converging on a common secret adding a new user involves \emph{distribution of group membership information}. In other words, when a new user is added by one of the current conversation participants, they need to be notified of what \emph{other} users are part of the group. There exist multiple ways of doing it, but no particular method was suggested by KleeQ's authors in the original paper. The method that was chosen as part of this project is illustrated in Figure \ref{fig:CliqueFormation}.
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.76\linewidth]{pics/CliqueFormation.png}
+    \caption{\label{fig:CliqueFormation} Schematic procedure for adding a new user to a clique. Public information is in {\color{red} red}, private -- in {\color{blue} blue}.}
+\end{figure}
+The figure shows how one of the current members (Bob) adds a new user (Charlie) to an existing clique also containing user Alice. Bob sends an invitation containing a Diffie-Hellman negotiation parameter based on the current clique secret. Charlie replies with his own negotiation parameter, and computes the new group secret and key. Upon receiving Charlie's response, Bob notifies the existing group members (Alice) of the newly added user using the \emph{old} key, also forwarding the new user's negotiation parameter. Then Bob computes the \emph{new} group secret, and uses the new key to provide Charlie with the current list of clique members ($userList = [Alice, Bob]$, in our example). \\
+
+In terms of programming, each of the messages in Figure \ref{fig:CliqueFormation} is modelled as a Java class (see Figure \ref{fig:messages_uml}). All message classes are derived from the abstract Message parent class which contains information and behaviour common to all messages. For transmission, instances of these classes are serialised into JSON strings\footnote{Third-party json-simple library was used for this (\url{https://github.com/fangyidong/json-simple})}.
+
+\begin{figure}[H]
+    %\captionsetup{width=0.8\textwidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{pics/messages_uml.png}
+    \caption{\label{fig:messages_uml} Classes modelling messages necessary to add a new user to a clique.}
+\end{figure}
+Conversion to JSON is performed using the \texttt{toJSON()} method, declared in the JSONizable interface and implemented in each of the child classes. When a message is received, the appropriate object is reconstructed by calling the static \texttt{fromJSON()} method in the base Message class. \\
+
+\subsubsection{Cryptography}
+The Clique class contains an instance of the Cryptographer (Figure \ref{fig:crypto_uml}) class that holds the key material and implements the relevant cryptographic procedures (Diffie-Hellman key exchange, encryption/decryption, MAC, message digest).
+
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.4\linewidth]{pics/crypto_uml.png}
+    \caption{\label{fig:crypto_uml} An instance of Cryptographer class is contained in Clique, and handles all group-specific cryptographic procedures.}
+\end{figure}
+
+The implementation of the key exchange is based on modular arithmetic with values of generator $G$ and group order $P$ taken to be:
+
+\begin{lstlisting}[numbers=none, frame=none, xleftmargin=1.5cm, xrightmargin=0cm]
+
+P  =  FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
+      29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
+      EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245
+      E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED
+      EE386BFB 5A899FA5 AE9F2411 7C4B1FE6 49286651 ECE45B3D
+      C2007CB8 A163BF05 98DA4836 1C55D39A 69163FA8 FD24CF5F
+      83655D23 DCA3AD96 1C62F356 208552BB 9ED52907 7096966D
+      670C354E 4ABC9804 F1746C08 CA18217C 32905E46 2E36CE3B
+      E39E772C 180E8603 9B2783A2 EC07A28F B5C55DF0 6F4C52C9
+      DE2BCBF6 95581718 3995497C EA956AE5 15D22618 98FA0510
+      15728E5A 8AAAC42D AD33170D 04507A33 A85521AB DF1CBA64
+      ECFB8504 58DBEF0A 8AEA7157 5D060C7D B3970F85 A6E1E4C7
+      ABF5AE8C DB0933D7 1E8C94E0 4A25619D CEE3D226 1AD2EE6B
+      F12FFA06 D98A0864 D8760273 3EC86A64 521F2B18 177B200C
+      BBE11757 7A615D6C 770988C0 BAD946E2 08E24FA0 74E5AB31
+      43DB5BFC E0FD108E 4B82D120 A9210801 1A723C12 A787E6D7
+      88719A10 BDBA5B26 99C32718 6AF4E23C 1A946834 B6150BDA
+      2583E9CA 2AD44CE8 DBBBC2DB 04DE8EF9 2E8EFC14 1FBECAA6
+      287C5947 4E6BC05D 99B2964F A090C3A2 233BA186 515BE7ED
+      1F612970 CEE2D7AF B81BDD76 2170481C D0069127 D5B05AA9
+      93B4EA98 8D8FDDC1 86FFB7DC 90A6C08F 4DF435C9 34063199
+      FFFFFFFF FFFFFFFF
+      
+G  =  2
+\end{lstlisting}
+which is a 4096-bit group recommended for use in Internet key exchange (IKE) in RFC3526 \cite{kivinen2003more}.\\
+
+The Diffie-Hellman procedures were implemented manually rather than using a library solution, for didactic reasons. A more advanced library implementation (e.g. based on elliptic curves) can always be easily substituted in place of the existing one if necessary -- this would only require changing the \texttt{getDHParam()} and \texttt{acceptDHParam()} methods. \\ 
+
+For encryption, the Cryptographer uses AES -- the block cipher which seems to be the de-facto standard for symmetric encryption at the moment. We use keys of length 128 bits, as recommended by the German Office of Information Security (BSI) for use up until year 2021 \cite{margraf2016kryptographische}. Stronger cryptography (AES192 or AES256) can be enabled with almost no changes to the code (just need to change the key size constant), but this requires manual installation of the Java Cryptography Extension (JCE) which would have a negative usability effect or would necessitate the creation of an installer program. Our implementation uses AES128 in \emph{counter mode} (CTR) with the initial vector generated by a secure pseudo-random number generator. This choice was made because our messages are generally of variable length and CTR is space-efficient in this case since it requires no padding. \\
+
+For message authentication, we use keyed-hash message authentication codes (HMAC) based on SHA256. According to a recent report by the German Office of Information Security (BSI), this cryptographic hash function can currently be considered secure and is expected to remain in active use at least until 2021 \cite{margraf2016kryptographische}. As of 2014, the best known attack could practically find a collision on 28 out of 64 rounds of SHA256 \cite{dobraunig2014analysis}. This project also uses SHA256 for computing message digests. As per the recommended practices\footnote{ISO/IEC 19772:2009}, we use encrypt-then-MAC (EtM), to not have to decrypt messages in order to verify their authenticity and integrity. \\
+
+The same key is used for encryption and MACing. Whilst not recommended in general, this is secure in our case because we calculate:
+\begin{equation*}
+    MAC_k(cliqueName||E_k(m))
+\end{equation*}
+and there are no known interactions between AES-CTR and HMAC-SHA2. {\color{red}Correct?}
 
 \subsection{Prototype 2: Patching}
 
