@@ -19,7 +19,7 @@
 
 
 \usepackage{blindtext}
-\usepackage[ttdefault=true]{AnonymousPro}
+\usepackage{AnonymousPro}
 
 \usepackage[toc, page]{appendix}
 
@@ -42,7 +42,7 @@
     keywordstyle=\color{deepblue},
 %    numberstyle=\tiny\color{codegray},
     stringstyle=\color{deepred},
-    basicstyle=\footnotesize,
+    basicstyle=\footnotesize\ttfamily,
     breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    
@@ -690,18 +690,18 @@ Once the ``scaffolding'' (server components and CLI) was completed, it became po
 
 
 \subsection{Prototype 1: Clique Formation}
-Building this prototype involved implementing the procedure for creating a new clique and adding users to it. In CLI terms, it meant implementing the logic of the \texttt{create} and \texttt{add} commands. This required the following tasks to be completed:
+Building this prototype involved implementing the procedure for creating a new clique and adding users to it. At this point, messages between clients were to be sent directly, rather than via patching, to be able to implement and test cryptography more easily. This required the following tasks to be completed:
 
 \begin{itemize}
     \item Designing an object-oriented representation for a clique such that it neatly fits into the previous design.
-    \item Working out the exact mechanics for adding a new user, based on the description in \cref{subsec:prep.formation}. Performing the necessary pieces of object-oriented design to model this process.
+    \item Working out the exact mechanics for adding a new user, based on the description in \cref{subsec:prep.formation}. Designing the classes to model this process.
     \item Choosing the cryptographic methods to be used for Diffie-Hellman key-exchange, encryption and message authentication. Implementing them in the object-oriented fashion that would work well with the rest of the design.
 \end{itemize}
 
 The next few sections address these three tasks in more detail.
 
 \subsubsection{Object-oriented clique model}
-A clique is modelled by the Clique class (Figure \ref{fig:clique_uml}) which contains all the group-specific information and implements most of the protocol's logic. Instances of the class are stored in a hash map (clique name to Clique instance) contained in the Client class, and its methods are called by the UI code when the user issues a command. In addition, Client also contains a hash map that maps \emph{address tags} (\cref{ssec:prep.proto.msg_fmt}) to clique names, which is used for demultiplexing encrypted messages into destination cliques as they arrive.
+A clique is modelled by the Clique class (Figure \ref{fig:clique_uml}) which contains all the group-specific information and implements most of the protocol's logic. Instances of the class are stored in a hash map (clique name to Clique instance) contained in the Client class, and its methods are called by the UI code when the user issues a command. In addition, Client is responsible for de-multiplexing the incoming messages into appropriate cliques -- this is done using another hash map that maps \emph{address tags} (\cref{ssec:prep.proto.msg_fmt}) to clique names. To re-direct a message into a specific clique, the Client calls the \texttt{datagramReceived()} method for the relevant instance of Clique.
 \begin{figure}[H]
     %\captionsetup{width=0.8\textwidth}
     \centering
@@ -719,7 +719,7 @@ As mentioned in \cref{sec:prep.proto}, KleeQ solves the key distribution problem
 \end{figure}
 The figure shows how one of the current members (Bob) adds a new user (Charlie) to an existing clique also containing user Alice. Bob sends an invitation containing a Diffie-Hellman negotiation parameter based on the current clique secret. Charlie replies with his own negotiation parameter, and computes the new group secret and key. Upon receiving Charlie's response, Bob notifies the existing group members (Alice) of the newly added user using the \emph{old} key, also forwarding the new user's negotiation parameter. Then Bob computes the \emph{new} group secret, and uses the new key to provide Charlie with the current list of clique members ($userList = [Alice, Bob]$, in our example). \\
 
-In terms of programming, each of the messages in Figure \ref{fig:CliqueFormation} is modelled as a Java class (see Figure \ref{fig:messages_uml}). All message classes are derived from the abstract Message parent class which contains information and behaviour common to all messages. For transmission, instances of these classes are serialised into JSON strings\footnote{Third-party json-simple library was used for this (\url{https://github.com/fangyidong/json-simple})}.
+In terms of programming, each of the messages in Figure \ref{fig:CliqueFormation} is modelled as a Java class (see Figure \ref{fig:messages_uml}). All message classes are derived from the abstract Message parent class which contains information and behaviour common to all messages.
 
 \begin{figure}[H]
     %\captionsetup{width=0.8\textwidth}
@@ -727,7 +727,8 @@ In terms of programming, each of the messages in Figure \ref{fig:CliqueFormation
     \includegraphics[width=0.6\linewidth]{pics/messages_uml.png}
     \caption{\label{fig:messages_uml} Classes modelling messages necessary to add a new user to a clique.}
 \end{figure}
-Conversion to JSON is performed using the \texttt{toJSON()} method, declared in the JSONizable interface and implemented in each of the child classes. When a message is received, the appropriate object is reconstructed by calling the static \texttt{fromJSON()} method in the base Message class. \\
+
+For transmission, instances of these classes are serialised into JSON strings\footnote{Third-party json-simple library was used for this (\url{https://github.com/fangyidong/json-simple})}. Using JSON was preferred over designing a custom byte-by-byte message layout because it is more flexible (can add and remove fields without changing much code), and was favoured over Java serialisation because it is not limited to Java and can make interoperability with other languages easier if the needed arises. Conversion to JSON is performed using the \texttt{toJSON()} method, declared in the JSONizable interface and implemented in each of the child classes. When a message is received, the appropriate object is reconstructed by calling the static \texttt{fromJSON()} method in the base Message class. \\
 
 \subsubsection{Cryptography}
 The Clique class contains an instance of the Cryptographer (Figure \ref{fig:crypto_uml}) class that holds the key material and implements the relevant cryptographic procedures (Diffie-Hellman key exchange, encryption/decryption, MAC, message digest).
@@ -741,7 +742,7 @@ The Clique class contains an instance of the Cryptographer (Figure \ref{fig:cryp
 
 The implementation of the key exchange is based on modular arithmetic with values of generator $G$ and group order $P$ taken to be:
 
-\begin{lstlisting}[numbers=none, frame=none, xleftmargin=1.5cm, xrightmargin=0cm]
+\begin{lstlisting}[numbers=none, frame=none, xleftmargin=1.5cm, xrightmargin=0cm, columns=fullflexible]
 
 P  =  FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1
       29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD
@@ -783,6 +784,52 @@ The same key is used for encryption and MACing. Whilst not recommended in genera
 and there are no known interactions between AES-CTR and HMAC-SHA2. {\color{red}Correct?}
 
 \subsection{Prototype 2: Patching}
+As mentioned before, the first prototype relied on exchanging messages by sending them directly. Building the second prototype involved using the process of patching (\cref{subsec:prep.patching}) for communication. To do this, the following tasks needed to be accomplished:
+\begin{itemize}
+    \item Designing a specialised data structure to store the message history, that would enforce the $<_L$ ordering as defined in \cref{subsec:prep.patching}
+    \item Working out what messages and in what order exactly need to be sent, and model this process using classes
+    \item Use result of the previous two tasks to implement the patching algorithm
+\end{itemize}
+The next several sections elaborate on the details of how the above was done.
+
+\subsubsection{Data structure for Message History}
+In the first prototype, the messages were sent directly and message history was stored in a list. This simple solution was sufficient because the history was only used to show it to the user, in order of arrival time. However, as was described in \cref{subsec:prep.patching}, patching (and later sealing) requires the messages to be ordered according to a specific total order ($<_L$). In addition, the message history needs to be cheap to iterate, since the patching algorithm will require it to answer queries of the form "last N messages by user X", and also iteration will be the basis of \emph{block finding} as part of sealing \cref{subsec:prep.sealing}. Apart from the actual messages, a \emph{version number} and a \emph{Lamport timestamp} need to be kept at all times. \\
+
+A logical way to satisfy the requirements above would be to model message history as a class, that contains the Lamport timestamp, the version number and the data structure storing messages according to some ordering (Figure \ref{fig:history_uml}). The Java Standard Library contains a class for just such a data structure -- it is the TreeSet<T>. TreeSet is a sorted, bidirectionally iterable collection that stores its items in an order specified by a Comparator.
+
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.4\linewidth]{pics/history_uml.png}
+    \caption{\label{fig:history_uml} MessageHistory models conversation history and provides an interface to it which is necessary for patching.}
+\end{figure}
+The implementation of VersionNumber is based on a hash map which keeps the number of messages authored by each user (if user is not in the hash map, value 0 is assumed).
+
+
+
+\subsubsection{Messages needed for Patching}
+Algorithm \ref{alg:patching} in \cref{subsec:prep.patching} shows the process of patching that is used by KleeQ to exchange messages. Essentially, each user updates every other user on the messages that they have not yet seen. Despite being somewhat inefficient (quadratic complexity), this scheme seems to be the only one to allow communication even when some of the group members are offline. The algorithm specifies the following kind of message exchange: \\
+
+{\color{red} Pic needed!} \\
+
+Implementing the scheme as shown above would require having three different kinds of message. To make things simpler, we decompose the exchange above into two request-response interactions: \\
+
+
+{\color{red} Pic needed!} \\
+
+This only needs two message types, and is therefore easier to implement. The overhead of transmitting four messages in place of three is minimal, since the messages also become smaller. As before, each of the message types is modelled with another subclass of the Message class (Figure \ref{TODO}). \\
+
+{\color{red} Pic needed!} \\
+
+The messages are converted to JSON strings as before.
+
+
+\subsubsection{Details of implementation}
+As mentioned before, the Clique class is \emph{active}, i.e. it contains a \texttt{run()} method whose code is executed in a separate thread. This thread is used to send out patch requests -- there is an infinite loop that regularly sends out a \emph{patching burst}, where we send a patch request to each of the conversation participants. To make sure that users do not query each other in lockstep, the process is randomised -- the time between bursts is a random uniformly distributed quantity, as is the spacing between requests within a single burst. In addition, in order to reduce the amount of consumed traffic and not send too many redundant requests, we have a timeout mechanism -- we keep the time of the last request sent to each user in a hash map, and only re-send after a specific period of time. \\
+
+This scheme has a lot of parameters that we can vary -- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic and energy consumption. \\
+
+{\color{red} Do I need source code here?}
 
 
 \subsection{Prototype 3: Sealing}
