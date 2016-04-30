@@ -12,6 +12,7 @@
 \usepackage{enumitem}
 \usepackage{float}
 \usepackage{amsmath}
+\usepackage{stmaryrd}
 \usepackage[labelfont=bf]{caption}
 \usepackage{algorithm}
 \usepackage[noend]{algorithmic}
@@ -808,18 +809,32 @@ The implementation of VersionNumber is based on a hash map which keeps the numbe
 
 
 \subsubsection{Messages needed for Patching}
-Algorithm \ref{alg:patching} in \cref{subsec:prep.patching} shows the process of patching that is used by KleeQ to exchange messages. Essentially, each user updates every other user on the messages that they have not yet seen. Despite being somewhat inefficient (quadratic complexity), this scheme seems to be the only one to allow communication even when some of the group members are offline. The algorithm specifies the following kind of message exchange: \\
+Algorithm \ref{alg:patching} in \cref{subsec:prep.patching} shows the process of patching that is used by KleeQ to exchange messages. Essentially, each user updates every other user on the messages that they have not yet seen. Despite being somewhat inefficient (quadratic complexity), this scheme seems to be the only one to allow communication even when some of the group members are offline. The algorithm specifies the following kind of message exchange:
 
-{\color{red} Pic needed!} \\
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{pics/patching_orig.png}
+    \caption{\label{fig:patching_orig} Patching algorithm.}
+\end{figure}
 
-Implementing the scheme as shown above would require having three different kinds of message. To make things simpler, we decompose the exchange above into two request-response interactions: \\
+Implementing the scheme as shown above would require having three different message types (one for each communication). To make things simpler, we decompose the exchange above into two request-response interactions:
 
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{pics/patching_modified.png}
+    \caption{\label{fig:patching_modified} Message scheme for the patching algorithm.}
+\end{figure}
 
-{\color{red} Pic needed!} \\
+This only requires two message types, and is therefore easier to implement. The overhead of transmitting four messages instead of three is minimal, since the messages also become smaller. As before, each of the message types is modelled with a subclass of the Message class (Figure \ref{fig:patching_messages_uml}).
 
-This only needs two message types, and is therefore easier to implement. The overhead of transmitting four messages in place of three is minimal, since the messages also become smaller. As before, each of the message types is modelled with another subclass of the Message class (Figure \ref{TODO}). \\
-
-{\color{red} Pic needed!} \\
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{pics/patching_messages_uml.png}
+    \caption{\label{fig:patching_messages_uml} Message classes for patching scheme. }
+\end{figure}
 
 The messages are converted to JSON strings as before.
 
@@ -827,12 +842,97 @@ The messages are converted to JSON strings as before.
 \subsubsection{Details of implementation}
 As mentioned before, the Clique class is \emph{active}, i.e. it contains a \texttt{run()} method whose code is executed in a separate thread. This thread is used to send out patch requests -- there is an infinite loop that regularly sends out a \emph{patching burst}, where we send a patch request to each of the conversation participants. To make sure that users do not query each other in lockstep, the process is randomised -- the time between bursts is a random uniformly distributed quantity, as is the spacing between requests within a single burst. In addition, in order to reduce the amount of consumed traffic and not send too many redundant requests, we have a timeout mechanism -- we keep the time of the last request sent to each user in a hash map, and only re-send after a specific period of time. \\
 
-This scheme has a lot of parameters that we can vary -- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic and energy consumption. \\
+This scheme has a lot of parameters that we can vary -- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic/energy consumption. \\
 
 {\color{red} Do I need source code here?}
 
 
 \subsection{Prototype 3: Sealing}
+The patching algorithm allows us to converge on a single transcript. To make sure that no messages in the transcript were damaged or maliciously modified, users independently split it into \emph{blocks} in a deterministic way (as per \cref{subsec:prep.sealing}) and compare hashes of the blocks. Once we verify that everybody has the same version of a block, we can safely delete it. To implement this process, two tasks needed to be performed:
+
+\begin{itemize}
+    \item Working out the exact protocol that clique members would use to compare hashes (what messages to sent, when to send them and what bookkeeping to do).
+    \item Coming up with an object-oriented implementation for the above that would integrate well with the rest of the design.
+\end{itemize}
+The next few sections describe how these tasks were accomplished in more detail.
+
+\subsubsection{Messages needed for Sealing}
+The original designers of the protocol left this part unspecified, only going as far as saying that hashes need to be compared once a block has been found by the block finding algorithm (Algorithm \ref{alg:block_find} in \cref{subsec:prep.sealing}). This section describes the solution that was used to fill this gap. \\
+
+When a user finds a block is found, they \emph{signal} this event to all of their peers by sending the hash code of the block. After the signal has been sent out, the user waits to receive the same signal from \emph{every other clique member}. When the appropriate signal has been received from everyone, the user considers the block sealed. \\
+
+Due to the asynchronous nature of communication, it is inevitable that users will be discovering blocks at different times. Thinking systematically, there are two cases that we need to consider:
+\begin{enumerate}
+    \item Users discover a block at almost the same time
+    \item Users discover a block with a significant time difference
+\end{enumerate}
+Figures \ref{fig:sealing_simult} and \ref{fig:sealing_lag} illustrate each of these cases for the case of clique of size 2.
+
+\begin{figure}[H]
+    \captionsetup{width=0.85\textwidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{pics/sealing_simult.png}
+    \caption{\label{fig:sealing_simult} Case 1. Alice and Bob find the block almost simultaneously.}
+\end{figure}
+Figure \ref{fig:sealing_simult} shows the case where participants discover ({\color{blue}blue} point in figure) a block almost at the same time and signal each other. For each signalled hash, every participant keeps track of $R$ -- subset of clique members whose signals for the corresponding blocks have not yet been received. When the set $R$ becomes empty, the block is sealed ({\color{deepgreen}green} point in figure).
+
+
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{pics/sealing_lag.png}
+    \caption{\label{fig:sealing_lag} Case 2. Bob finds a block much earlier, and his signal is received by Alice before she finds it herself.}
+\end{figure}
+
+Figure \ref{fig:sealing_lag} shows what happens when the participants find a block at significantly different times. Alice receives a signal for a block she has not discovered yet, but her actions are effectively same as before -- she keeps a set of users who still have not found the block \emph{which includes herself}. When she finds the block, she signals this and then considers it sealed. \\
+
+
+As can be seen, in both cases 2 messages are sufficient to seal a block, which is much better than what we would get if we were to use the straightforward request-response solution. {\color{red} Is it clear what I mean???}. For a general clique of size $n$, the message count is $2(n-1)$. \\
+
+The scheme described above is sufficient under the assumption of \emph{reliable transport} which may be valid as part of this project (both TCP and HTTP are reliable) but not generally. For completeness, the cases when messages get lost or intercepted have also been handled. It is in fact quite straightforward -- if someone's signal gets lost, they are reminded about it by those who failed to receive it. An example of this is shown in Figure \ref{fig:sealing_lost}.
+
+\begin{figure}[H]
+    \captionsetup{width=0.76\textwidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{pics/sealing_lost.png}
+    \caption{\label{fig:sealing_lost} One of the signals is lost. Unlucky recipient requests a retransmission explicitly.}
+\end{figure}
+
+Bob discovers a block and signals it to Alice, but the message is unfortunately lost in transit. Alice finds the block herself and notifies Bob about it -- Bob now regards the block sealed. After some time, Alice sees that she is missing a confirmation from Bob and signals him again to ask for a re-transmission. Upon receiving the notification, Bob sees that it is \emph{for a block that has already been sealed}, and re-sends the signal to Alice. 
+
+
+\subsubsection{Details of implementation}
+The basis of the scheme described above is the block finding algorithm (Algorithm \ref{alg:block_find} from \cref{subsec:prep.sealing}). It was implemented as the \texttt{getNextSealableBlock()} method of the MessageHistory class. At this point, some of the advance planning done for the previous prototype payed off -- the fact that TreeSet had been chosen as the storage structure for messages helped implement the block finding algorithm in an efficient and straightforward way. In particular, the algorithm heavily relies on iterating over the history in both directions and taking sub-lists, and both of these operations are cheap and provided as standard methods in TreeSet. Also, a simple caching mechanism was used to not re-compute the blocks every time the \texttt{getNextSealableBlock()} is called -- the method finds the next block only once, and then re-uses its previous work on following calls when possible.\\
+
+A discovered block is represented by the class SealableBlock (Figure \ref{fig:sealable_block_uml}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.80\textwidth}
+    \centering
+    \includegraphics[width=0.4\linewidth]{pics/sealable_block_uml.png}
+    \caption{\label{fig:sealable_block_uml} SealableBlock class.}
+\end{figure}
+
+The class contains the block's fingerprint that is calculated as follows:
+
+\begin{equation*}
+    \begin{split}
+    \text{fingerprint} = & \text{SHA256}\Big(block.number + \\
+                        & \sum_{m \in block}("|" + m.author + ":" + m.text + "@" + m.lamportTime)\Big)
+    \end{split}
+\end{equation*}
+where $block.number$ is the sequence number of the block. \\
+
+All of the signalling logic as described in the previous section is contained in the Clique class. Similarly to patching, every few seconds we attempt to discover a block in our MessageHistory. If the \texttt{getNextSealableBlock()} returns a non-empty block, we send out a signal message containing the hash of this block to each of the clique members. We keep a hash map that maps a block hash code to the set of users who still have not confirmed its discovery (set $R$ from the previous section). Every once in a while, we re-send a signal to everyone in the set, in case they did not get it the last time or their signal did not reach us. As before, received messages are handled in the \texttt{msgReceived()} method -- the logic for what happens when a signal is \emph{received} is implemented there. \\
+
+Similarly to other message types, the signalling message class (SealSignalMessage) is just another subclass of Message (Figure \ref{fig:seal_message}) and is converted to JSON for transmission in a similar way.
+
+\begin{figure}[H]
+    \captionsetup{width=0.80\textwidth}
+    \centering
+    \includegraphics[width=0.4\linewidth]{pics/seal_message.png}
+    \caption{\label{fig:seal_message} SealSignalMessage class models the discovery signal.}
+\end{figure}
 
 
 \subsection{Prototype 4: Key Management}
