@@ -62,6 +62,9 @@
 % math 
 \newcommand\floor[1]{\lfloor#1\rfloor}
 
+% tt for NoNaMe
+\newcommand{\funkytt}{\fontfamily{AnonymousPro}\selectfont}
+
 \newcommand{\skippage}{\newpage\null\newpage}
 
 \newcommand*{\titleTH}{ % title page
@@ -69,7 +72,7 @@
 \raggedleft
 \thispagestyle{empty}
 {\Large Pavel Berkovich}\\[0.167\textheight] \centering
-{\huge \texttt{N0NaMe\_}}\\[\baselineskip]
+{\huge{\funkytt N0NaMe\_}}\\[\baselineskip]
 {\Large Peer-to-peer conversation security \\ using KleeQ} \\
 \begin{figure}[h]
     \centering
@@ -385,7 +388,7 @@ Every block is given a sequential number. When a block is found, the concatenati
 \end{algorithm}
 \subsection{Key management}
 \label{subsec:prep.keyman}
-As described in \cref{subsec:formation}, each clique has a common secret. This secret is used to derive the \emph{key} which is then used to encrypt and authenticate the communication. The secret and the key are updated on multiple occasions. Initially, the key is calculated as:
+As described in \cref{subsec:prep.formation}, each clique has a common secret. This secret is used to derive the \emph{key} which is then used to encrypt and authenticate the communication. The secret and the key are updated on multiple occasions. Initially, the key is calculated as:
 \begin{equation*}
     k \leftarrow MAC_{s}(cliqueName)
 \end{equation*}
@@ -646,6 +649,7 @@ The Communicator class also contains a \texttt{send()} method which uses the dat
 
 
 \subsection{A simple CLI}
+\label{subsec:impl.prep.CLI}
 The primary reason for building this component was to be able to test various aspects of the KleeQ's operation just by typing commands, without changing the source code. In addition, upfront design of a CLI helped understand what use-cases need to be handled. \\
 
 The design involved defining a minimal set of operations that a group messaging application needs to have. The corresponding commands are shown in Table \ref{tab:CLI}.
@@ -691,6 +695,7 @@ Once the ``scaffolding'' (server components and CLI) was completed, it became po
 
 
 \subsection{Prototype 1: Clique Formation}
+\label{subsec:impl.proto.formation}
 Building this prototype involved implementing the procedure for creating a new clique and adding users to it. At this point, messages between clients were to be sent directly, rather than via patching, to be able to implement and test cryptography more easily. This required the following tasks to be completed:
 
 \begin{itemize}
@@ -848,6 +853,7 @@ This scheme has a lot of parameters that we can vary -- inter-burst time spacing
 
 
 \subsection{Prototype 3: Sealing}
+\label{subsec:impl.proto.sealing}
 The patching algorithm allows us to converge on a single transcript. To make sure that no messages in the transcript were damaged or maliciously modified, users independently split it into \emph{blocks} in a deterministic way (as per \cref{subsec:prep.sealing}) and compare hashes of the blocks. Once we verify that everybody has the same version of a block, we can safely delete it. To implement this process, two tasks needed to be performed:
 
 \begin{itemize}
@@ -936,9 +942,115 @@ Similarly to other message types, the signalling message class (SealSignalMessag
 
 
 \subsection{Prototype 4: Key Management}
+Key management as described in \cref{subsec:prep.keyman} proved to be fairly easy to implement, thanks to the provident design and flexible programming performed at the previous stages. \\
 
+Key rotation due to adding a new user to the clique is automatically handled by our implementation of the clique formation routines based on Diffie-Hellman key exchange (see Prototype 1 in \cref{subsec:impl.proto.formation}). \\
+
+Rotating the key after a block has been sealed was implemented by just adding one extra method to the Cryptographer class:
+
+\begin{lstlisting}[language=Java, columns=fullflexible]
+synchronized public void rotateKey(SealableBlock sBlock) {
+    /* updates the shared secret and rotates the key on block seal
+    *       secret <--- MAC(K, secret)
+    *       K <--- MAC(secret, block_contents)
+    * */ 
+    // save current key, for sealing retransmissions
+    prevKey = secretKey
+    
+    // update the shared secret
+    secretExp = new BigInteger(macBytes(secretExp.toByteArray()));
+
+    // temporary update for secret key, to calc MAC(secret, block_content)
+    secretKey = new SecretKeySpec(secretExp.toByteArray(), 0, encBitLength / 8, encAlgo);
+    byte[] newSecretKeyBytes = macBytes(sBlock.toString().getBytes());
+
+    // final update to secret key
+    secretKey = new SecretKeySpec(newSecretKeyBytes, 0, encBitLength / 8, encAlgo);
+}
+\end{lstlisting}
+As noted in \cref{subsec:impl.proto.sealing}, our sealing protocol requires users to be able to receive and send signals regarding previously sealed blocks (the case shown in Figure \ref{fig:sealing_lost}). This is implemented by always keeping the previous key in memory, in case someone needs a retransmission of the sealing signal\footnote{It is easy to show that keeping more than one old key is not necessary -- it is impossible to ``fall behind'' by more than one block.}.
 
 \subsection{Prototype 5: Interface}
+This was the final prototype whose aim was to prepare the application for evaluation and demonstration. For these purposes, two tasks needed to be accomplished:
+\begin{itemize}
+    \item Building a \emph{machine interface}, to allow easy interaction of the application with the evaluation scripts.
+    \item Constructing a simple graphical interface (GUI) with the same functionality as the existing command-line interface (CLI).
+\end{itemize}
+
+Both of these components were fairly straightforward to add to the existing messaging application due to the modular approach that was chosen when writing the CLI (\cref{subsec:impl.prep.CLI}). The required functionality could be easily added with two more extensions of the abstract Client class (Figure \ref{fig:Client_UI}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.80\textwidth}
+    \centering
+    \includegraphics[width=0.76\linewidth]{pics/Client_UI.png}
+    \caption{\label{fig:Client_UI} Class hierarchy implementing different interfaces.}
+\end{figure}
+The next two sections below present a more detailed account of how the interfaces have been implemented.
+
+\subsubsection{Machine Interface}
+Manually evaluating the newly created application at a large scale would hardly have been possible -- it would require too much human input. The machine interface was built for the purpose of evaluating the application in an automated way. It was expected that evaluation would be accomplished by running a single script that would start-up several instances of {\funkytt N0NaMe} and control them by sending commands (Figure \ref{fig:eval_script}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.84\textwidth}
+    \centering
+    \includegraphics[width=0.76\linewidth]{pics/eval_script.png}
+    \caption{\label{fig:eval_script} Evaluation script interacts with several {\funkytt N0NaMe} instances.}
+\end{figure}
+
+The required kind of inter-process communication (IPC) can be easily achieved by re-directing the \emph{standard streams} (\texttt{stdin, stdout} and \texttt{stderr}). The programming of the machine interface is not much different from that of the CLI. Essentially, it is a simplified version of the CLI with both commands and output optimised for interaction with a script rather than a human. Table \ref{tab:MachineInterface} summarises the command set.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.95\textwidth}{l | l | l}
+    Command & Arguments & Output \\
+    \hline
+    groups & -- & space-separated list of groups \\
+    peers & -- & space-seprated list of list of peers online \\
+    isOnline & -- & online/offline \\
+    create & groupID & ACK if successfully created, Error otherwise \\
+    add & userID, groupID & ACK is added, Error otherwise \\
+    msg & groupID, msgText & ACK if sent, Error otherwise \\
+    history & groupID & JSON([(author, text), ...]) \\
+    members & groupID & space separated list of users in a clique \\
+    exit & -- & ACK (program shuts down)
+\end{tabular*}
+\caption{\label{tab:MachineInterface} Machine interface commands}
+\end{table}
+As can be seen, the machine interface is \emph{mode-free} -- this was done to reduce the amount of state that an evaluation script would need to hold. As in the case of the CLI, the implementation is contained in the \texttt{machineInterface()} method of MachineClient, and consists of a simple infinite loop where the input is taken from \texttt{stdin} and parsed by a few conditional statements, and the output is written into \texttt{stdout}.
+
+
+\subsubsection{Graphical User Interface (GUI)}
+A GUI was built to assess the usability implications of using KleeQ, as well as to demonstrate the newly constructed messaging application. Figure \ref{fig:GUI} shows its layout and explains the functionality of various components.
+\begin{figure}[H]
+    \captionsetup{width=0.84\textwidth}
+    \centering
+    \includegraphics[width=0.94\linewidth]{pics/GUI.png}
+    \caption{\label{fig:GUI} Interface layout and functionality.}
+\end{figure}
+Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications, to make sure it is familiar to anyone who has ever used messengers before. \\
+
+In terms of design, out interface is based on a single screen with functionality for creating new groups and adding users implemented as pop-up windows (Figure \ref{fig:GUI_create} and Figure \ref{fig:GUI_add}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.84\textwidth}
+    \centering
+    \includegraphics[width=0.5\linewidth]{pics/GUI_create.png}
+    \caption{\label{fig:GUI_create} Pop-up window for creating a new group.}
+\end{figure}
+
+\begin{figure}[H]
+    \captionsetup{width=0.84\textwidth}
+    \centering
+    \includegraphics[width=0.5\linewidth]{pics/GUI_add.png}
+    \caption{\label{fig:GUI_add} Pop-up window for add a new user to the current group.}
+\end{figure}
+
+The interface is based on the Swing framework, and was constructed using the visual design tool built into IntelliJ IDEA. For efficiency and performance, the interface is updated in a \emph{lazy} fashion -- when some significant change takes place (e.g. a new message arrives), the rest of the application code notifies the UI by calling the \texttt{updateContent()} method.
+
+
+
+
+\section{Summary}
 
 
 \chapter{Evaluation}

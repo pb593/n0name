@@ -113,9 +113,9 @@ public class Cryptographer {
 
         // temporary update for secret key
         secretKey = new SecretKeySpec(secretExp.toByteArray(), 0, encBitLength / 8, encAlgo);
-        byte[] newSecretKeyBytes = macBytes(sBlock.toString().getBytes());
+        byte[] newSecretKeyBytes = macBytes(sBlock.toString().getBytes()); // MAC(secret, block_content)
 
-        // update the secret key properly
+        // final update to secret key
         secretKey = new SecretKeySpec(newSecretKeyBytes, 0, encBitLength / 8, encAlgo);
 
     }
