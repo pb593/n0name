@@ -224,6 +224,7 @@ This chapter has shown where this project fits in the field of secure messaging,
 
 \chapter{Preparation}
 \label{ch:prep}
+This section familiarises the reader with the work that was done before any programming began. It presents the details of the KleeQ protocol (\cref{sec:prep.proto}), as well as the formal requirements for what needs to be accomplished (\cref{sec:prep.requirements}). Then it describes some preliminary design work (\cref{sec:prep.design}) and the expected implementation strategy (\cref{sec:prep.impl_strat}). In the end of this section, we discuss some of the technology and tools that were used in this project (\cref{sec:choices}).
 
 \section{Protocol Description}
 \label{sec:prep.proto}
@@ -412,9 +413,12 @@ The key also gets rotated when a block is sealed:
 \] \\
 
 The resulting chain of secrets and keys can be schematically summarised as follows:
-{ 
-    {\color{red} Schamatic pic here!}
-} \\ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 0.8 \linewidth]{pics/keys_secrets.png}
+    \caption{\label{fig:keys_secrets}Schematic diagram of the key rotation process.}
+\end{figure}
+
 Note that the key rotation scheme helps us achieve both forward and backward secrecy. Given a compromised key, extracting the previous one is essentially equivalent to online inversion of a hash function, whereas computing the next key in the chain would require the adversary to also know the current secret.
 
 
@@ -531,6 +535,7 @@ Implementing KleeQ itself required a more flexible approach and the \emph{iterat
 \end{description}
 
 \section{Choice of Technology, Libraries and Tools}
+\label{sec:choices}
 The technology and libraries were carefully chosen so as to make the development process more smooth, as well as to allow for some flexibility and modularity.
 
 \subsection{Server side}
@@ -545,8 +550,11 @@ This chapter has described the KleeQ protocol in full detail (\cref{sec:prep.pro
 
 
 \chapter{Implementation}
-{\color{red} Roadmap?}
+This chapter describes in detail how the plan presented in \cref{sec:prep.impl_strat} was carried out. We start by looking at some auxiliary components (\cref{sec:impl.prep}) that were implemented before KleeQ itself, namely the server infrastructure (\cref{subsec:impl.prep.server}) and their client-side API (\cref{subsec:impl.prep.API}), the client transport code (\cref{subsec:impl.prep.transport}) and a simple command-line interface (\cref{subsec:impl.prep.transport}). We then proceed to discussing the implementation of KleeQ \cref{sec:impl.proto}, elaborating in detail on each of the incremental prototypes that were constructed.
+
+
 \section{Preparatory coding}
+\label{sec:impl.prep}
 As explained in the previous chapter, implementing KleeQ as described in \cref{sec:prep.proto} required some other code to be written first. In particular, the following components needed to be built and tested:
 \begin{itemize}
     \item server Python applications (Address Book and Store-and-Forward)
@@ -556,6 +564,7 @@ As explained in the previous chapter, implementing KleeQ as described in \cref{s
 The next few sections describe in detail how these tasks were performed.
 
 \subsection{Server-side applications}
+\label{subsec:impl.prep.server}
 This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. Both server components are small HTTP services -- the choice of protocol has been motivated by a good selection of third-party libraries for HTTP communication and the fact that it usually is not blocked by firewalls.\\
 
 The Address Book and the Store-and-Forward (SaF) service were implemented using Flask, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
@@ -613,6 +622,7 @@ As before, each command is implemented as a Flask callback procedure. The implem
 
 
 \subsection{Client-side API for server applications}
+\label{subsec:impl.prep.API}
 As mentioned before, the server applications use HTTP to communicate with the outside world. To access the commands of the services from the client application, a Java API has been built. It is a collection of static methods contained in 3 classes, which provide a convenient interface to the server components by sending the appropriate HTTP requests.
 
 \begin{figure}[H]
@@ -627,6 +637,7 @@ In an early implementation of the AddressBook class, the methods \texttt{lookup(
 %Each client instance contains an \emph{address-reporting thread} which calls the \texttt{checkin()} method from time to time, to update the server records about itself.
 
 \subsection{Client-side transport code}
+\label{subsec:impl.prep.transport}
 The interface described above is primarily used by the Communicator class (see Figure \ref{fig:core_uml}), which is responsible for transport and connectivity. The class contains three threads that are perpetually running:
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Address-reporting thread] \hfill \\
@@ -691,6 +702,7 @@ The logic of the interface was coded as an infinite loop which takes keyboard in
 
 
 \section{Protocol implementation}
+\label{sec:impl.proto}
 Once the ``scaffolding'' (server components and CLI) was completed, it became possible to proceed with the implementation of KleeQ itself, as described in \cref{sec:prep.proto}.
 
 
@@ -1027,7 +1039,7 @@ A GUI was built to assess the usability implications of using KleeQ, as well as 
     \includegraphics[width=0.94\linewidth]{pics/GUI.png}
     \caption{\label{fig:GUI} Interface layout and functionality.}
 \end{figure}
-Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications, to make sure it is familiar to anyone who has ever used messengers before. \\
+Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications (e.g. Viber, Telegram), to make sure it is familiar to anyone who has ever used messengers before. \\
 
 In terms of design, out interface is based on a single screen with functionality for creating new groups and adding users implemented as pop-up windows (Figure \ref{fig:GUI_create} and Figure \ref{fig:GUI_add}).
 
@@ -1045,13 +1057,18 @@ In terms of design, out interface is based on a single screen with functionality
     \caption{\label{fig:GUI_add} Pop-up window for add a new user to the current group.}
 \end{figure}
 
-The interface is based on the Swing framework, and was constructed using the visual design tool built into IntelliJ IDEA. For efficiency and performance, the interface is updated in a \emph{lazy} fashion -- when some significant change takes place (e.g. a new message arrives), the rest of the application code notifies the UI by calling the \texttt{updateContent()} method.
+The interface is based on the Swing framework, and was constructed using the visual design tool built into IntelliJ IDEA. Most of the GUI logic is contained in the GUIClient class (Figure \ref{fig:GUIClient}).
 
-
-
+\begin{figure}[H]
+    \captionsetup{width=0.84\textwidth}
+    \centering
+    \includegraphics[width=0.45\linewidth]{pics/GUIClient.png}
+    \caption{\label{fig:GUIClient} GUIClient implements the GUI logic.}
+\end{figure}
+In brief, the constructor of the class instantiates JFrame and adds callbacks to all the GUI elements contained in  it (text fields, buttons etc), which handle user input and output. The inherited \texttt{run()} method makes the frame visible to the user, allowing them to interact with the program. The fact that GUIClient is a subclass of Client (see Figure \ref{fig:Client_UI}) enables a simple communication model between the two -- GUIClient can get the necessary information by accessing \texttt{protected} fields and methods in Client, whereas Client can talk to GUIClient by calling the abstract methods that GUIClient implementes (e.g. \texttt{setIsOnline()}, \texttt{updateContent()}). This kind of communication between classes makes the UI very efficient -- the Client explicitly requests an interface refresh when some significant change happens (e.g. a new message arrives), which requires much less computing power than busy-waiting on several data structures. {\color{red} Is it clear what I mean??}
 
 \section{Summary}
-
+In this chapter, the reader was familiarised with how {\funkytt N0NaMe} was taken from a conceptual description to a concrete implementation. In particular, in \cref{sec:impl.prep} we have looked at the auxilliary ``scaffolding'' components that were constructed before the core protocol, and then (in \cref{sec:impl.proto}) went over the series incremental steps taken to implement KleeQ itself. At this stage, some steps were taken to simplify the process of evaluation whose details and findings are presented in the next chapter.
 
 \chapter{Evaluation}
 
