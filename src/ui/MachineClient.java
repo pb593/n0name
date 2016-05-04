@@ -19,7 +19,7 @@ import java.util.Scanner;
  *
  *  groups,                         <space-separated list of groups>,   returns list of groups user is in
  *  peers,                          <list of peers currently online>,   returns all users in address book (space-separated)
- *  isOnline,                       online/offline,                     yes iff chat is online
+ *  status,                         online/offline,                     yes iff chat is online
  *  create <groupID>,               ACK/Error,                          request to create a group
  *  add <userID> <groupID>,         ACK/Error,                          request to add user to a group
  *  msg <groupID> <"message text">, ACK/Error,                          request to send message to a group
