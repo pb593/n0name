@@ -164,7 +164,7 @@ def stats_get_all():
     
 @app.route("/saf/stats/get/<userID>")
 def stats_get(userID):
-    if(os.path.isfile('stats/%s.txt') % userID):
+    if(os.path.isfile("stats/%s.txt" % userID)):
         rst = ""
         with open('stats/.txt', 'r') as f:
             return "<br>".join(line.strip() for line in f)
