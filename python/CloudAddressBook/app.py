@@ -158,9 +158,7 @@ def stats_get_all():
     if(os.path.isfile('stats/all.txt')):
         rst = ""
         with open('stats/all.txt', 'r') as f:
-            for line in f:
-                rst+=(line+"\n")
-        return rst
+            return "<br>".join(line.strip() for line in f)
     else:
         return "Stats file does not exist"
     
@@ -169,13 +167,10 @@ def stats_get(userID):
     if(os.path.isfile('stats/%s.txt') % userID):
         rst = ""
         with open('stats/.txt', 'r') as f:
-            for line in f:
-                rst+=(line+"\n")
+            return "<br>".join(line.strip() for line in f)
         return rst
     else:
         return "Stats file does not exist"
-                
-    
     
     
 
