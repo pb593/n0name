@@ -154,7 +154,7 @@ def stats_reset():
     return rst
     
 @app.route("/saf/stats/get_all")
-def stats_reset():
+def stats_get_all():
     if(os.path.isfile('stats/all.txt')):
         rst = ""
         with open('stats/all.txt', 'r') as f:
@@ -165,7 +165,7 @@ def stats_reset():
         return "Stats file does not exist"
     
 @app.route("/saf/stats/get/<userID>")
-def stats_reset(userID):
+def stats_get(userID):
     if(os.path.isfile('stats/%s.txt') % userID):
         rst = ""
         with open('stats/.txt', 'r') as f:

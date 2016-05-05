@@ -51,7 +51,7 @@ class NonameInstance:
         if raw == "ACK":
             # wait for DH to go through
             while(userID not in self.memberList(groupName)):
-                sleep(1)
+                sleep(0.3)
             return True
         else:
             return False
@@ -65,7 +65,7 @@ class NonameInstance:
 
     def getHistory(self, groupName):
         raw = self.__command("history %s" % (groupName))
-        return json.loads(groupName)
+        return json.loads(raw)
 
     def exit(self):
         raw = self.__command("exit")
