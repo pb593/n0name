@@ -126,6 +126,7 @@ def saf_reset():
         
 @app.route("/saf/stats/start")
 def stats_start():
+    global t0
     t0 = time.time() # reset the time
     global keep_stats
     keep_stats = True
