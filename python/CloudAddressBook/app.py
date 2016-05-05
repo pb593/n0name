@@ -153,6 +153,31 @@ def stats_reset():
     rst = "ACK"
     return rst
     
+@app.route("/saf/stats/get_all")
+def stats_reset():
+    if(os.path.isfile('stats/all.txt')):
+        rst = ""
+        with open('stats/all.txt', 'r') as f:
+            for line in f:
+                rst+=(line+"\n")
+        return rst
+    else:
+        return "Stats file does not exist"
+    
+@app.route("/saf/stats/get/<userID>")
+def stats_reset(userID):
+    if(os.path.isfile('stats/%s.txt') % userID):
+        rst = ""
+        with open('stats/.txt', 'r') as f:
+            for line in f:
+                rst+=(line+"\n")
+        return rst
+    else:
+        return "Stats file does not exist"
+                
+    
+    
+    
 
 ######### Other functions
 
