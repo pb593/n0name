@@ -170,5 +170,5 @@ def page_not_found(e):
     return 'Sorry, nothing at this URL.', 404
 
 #only for debugging, delete in deployment    
-if __name__ == "__main__":
-    app.run()
+#if __name__ == "__main__":
+#    app.run()
