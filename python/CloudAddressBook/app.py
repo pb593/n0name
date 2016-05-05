@@ -1,4 +1,4 @@
-import threading, time
+import threading, time, os, sys
 from IPy import IP
 
 from flask import Flask, request
@@ -63,8 +63,13 @@ def display():
 
 ######### store-n-forward (saf) functionality
 
-
 messages = dict() # dictionary: userID -> list{message} 
+
+# stats
+t0 = time.time()
+stats_dir = "stats"
+all_stat_file = "all.txt"
+keep_stats = False
 
 @app.route("/saf/view/<userID>")
 def saf_view(userID): # for debugging purposes, just shows what's in the postbox
@@ -77,13 +82,26 @@ def saf_view(userID): # for debugging purposes, just shows what's in the postbox
 
 
 @app.route("/saf/retrieve/<userID>")
-def saf_retrieve(userID): # check the postbox to see if there are any new messages
-                    # HAS SIDE EFFECT: deletes messages after returning them
+def saf_retrieve(userID): # check the postbox to see if there are new messages
+    # HAS SIDE EFFECT: deletes messages after returning them
     
     userID = str(userID)
     if userID in messages:
         rst = "\n".join(messages[userID])
         del messages[userID]
+        print(keep_stats)
+        if keep_stats:
+            print("Wrote stats to files!")
+            t = time.time()
+            size = sys.getsizeof(rst)
+            # record user-specific traffic consumption
+            with open(stats_dir + "/" + userID + ".txt", 'a') as f:
+                f.write("%d, %d\n" % (t - t0, size))
+                f.flush()
+            # record system-wide traffic consumption
+            with open(stats_dir + "/" + all_stat_file, 'a') as f:
+                f.write("%d, %d\n" % (t - t0, size))
+                f.flush()
         return rst
     else:
         return "None"
@@ -101,8 +119,39 @@ def saf_store(userID): # used for sending messages to the user using the store-n
 
     return "ACK"
 
-
-
+@app.route("/saf/reset")
+def saf_reset():
+    messages.clear() # just clear all the postboxes
+    return "ACK"
+        
+@app.route("/saf/stats/start")
+def stats_start():
+    t0 = time.time() # reset the time
+    global keep_stats
+    keep_stats = True
+    print("Switched on stats!")
+    return "ACK"
+    
+@app.route("/saf/stats/stop")
+def stats_stop():
+    global keep_stats
+    keep_stats = False
+    print("Switched off stats!")
+    return "ACK"
+    
+@app.route("/saf/stats/reset")
+def stats_reset():
+    # clear all stat files
+    for fname in os.listdir(stats_dir):
+        try:
+            file_path = os.path.join(stats_dir, fname)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            rst = "Error"
+    rst = "ACK"
+    return rst
+    
 
 ######### Other functions
 
