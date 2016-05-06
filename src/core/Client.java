@@ -37,17 +37,20 @@ abstract public class Client implements Runnable {
         // main function of the client
 
         // first, whether user wants a GUI, CLI or machine interface
-        int interfaceCode = 0;
-        if(argv.length == 0) { // we need GUI
-            interfaceCode = GUIClient.interfaceCode;
-        }
-        else { // we have an option specified
+        int interfaceCode = GUIClient.interfaceCode; // GUI is default interface
+
+        if(argv.length >= 1) { // we have at least one option -> interface has been specified
             if(argv[0].equals("-cli"))
                 interfaceCode = CLIClient.interfaceCode;
             else if(argv[0].equals("-m"))
                 interfaceCode = MachineClient.interfaceCode;
             else // some sort of other option specified
                 interfaceCode = GUIClient.interfaceCode; // fall back to GUI
+        }
+
+        if(argv.length >= 2) { // we have 2 or more options ->  patching period has been specified
+            double PATCH_PERIOD = Double.parseDouble(argv[1]);
+            Utils.PATCH_FREQ = 1.0 / PATCH_PERIOD;
         }
 
         // try to reach out to address book
@@ -89,7 +92,7 @@ abstract public class Client implements Runnable {
                     System.exit(0); // just exit
             }
             else { // machine interface
-                if(argv.length >= 2) userID = argv[1]; else System.exit(1); // takes user name as shell argument
+                if(argv.length >= 3) userID = argv[2]; else System.exit(1); // takes user name as shell argument
             }
 
             try {

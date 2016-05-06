@@ -6,12 +6,12 @@ from time import sleep
 
 
 class NonameInstance:
-    def __init__(self, userID=None):
+    def __init__(self, userID=None, patch_period=5):
         if userID is None:
             userID = ''.join(random.choice('0123456789abcdef') for i in range(10))
 
         self.userID = userID
-        self.proc = sp.Popen(["java", "-jar", "part2proj.jar", "-m", userID], stdin=sp.PIPE, stdout=sp.PIPE)
+        self.proc = sp.Popen(["java", "-jar", "../part2proj.jar", "-m", str(patch_period) , userID], stdin=sp.PIPE, stdout=sp.PIPE)
 
     def __command(self, cmd):
         cmd = cmd + "\n"

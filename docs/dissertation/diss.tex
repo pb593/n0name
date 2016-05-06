@@ -74,10 +74,12 @@
 {\Large Pavel Berkovich}\\[0.167\textheight] \centering
 {\huge{\funkytt N0NaMe\_}}\\[\baselineskip]
 {\Large Peer-to-peer conversation security \\ using KleeQ} \\
+\vspace{2.5cm}
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.8\textwidth]{lock_chat.png} 
+    \includegraphics[width = 0.25\textwidth]{lock_chat.png.png} 
 \end{figure}
+\vspace{3cm}
 {\large Computer Science Tripos, Part II}\\ \vspace{3mm}
 {\large St John's College} \\ \vspace{3mm}
 {\large 13th May, 2016}
@@ -138,9 +140,9 @@ I, Pavel Berkovich of St John's College, being a candidate for Part II of the Co
 \label{sec:intro.overview_sec_mess}
 The era of global communication has presented humanity with many opportunities, but has also made our private lives more vulnerable to intrusion. Given the broad range of cyber-threats that our society is facing today, there is now significant demand for secure communication systems. The recent disclosures about widespread state surveillance programmes demonstrated the massive scale of the resources that a potential adversary might posses, and lead to fundamental change in public perception of what security means. As a result, we are now witnessing an unprecedented level of effort to develop messaging systems emphasising security and privacy. Some of these systems enjoyed considerable popularity whilst others remained largely unknown to non-experts, but each of them has been found to have some security flaws\footnote{\url{https://www.eff.org/secure-messaging-scorecard}} or usability problems.\\
 
-Discussing secure messaging in more detail and comparing different solutions requires a clearly defined threat model and a systematic evaluation framework. One possible approach was proposed by Unger et al~\cite{unger2015sok} in a recent survey of the existing secure messaging systems which identified three key problems that any secure messenger must solve, namely:
+Discussing secure messaging in more detail and comparing different solutions requires a clearly defined threat model and a systematic evaluation framework. One possible approach was proposed by Unger \textit{et al.}~\cite{unger2015sok} in a recent survey of the existing secure messaging systems which identified three key problems that any secure messenger must solve, namely:
 
-% It is worth pointing out that, similarly to many other information security products, secure chats present an example of what is known as a ``market for lemons'' \cite{akerlof1970lemons} \cite{anderson2001information}. In this type of market, buyers have no feasible way to assess the quality of what is offered, and success of a product is determined by other factors (e.g. low price, short time-to-market), leaving producers with no economic incentive to invest in developing high-quality solutions. For secure chats, this implies that commercial success of a messaging application is by no means a measure of its actual security. \\ 
+% It is worth pointing out that, similarly to many other information security products, secure chats present an example of what is known as a ``market for lemons'' \cite{akerlof1970lemons} \cite{anderson2001information}. In this type of market, buyers have no feasible way to assess the quality of what is offered, and success of a product is determined by other factors (\textit{e.g.} low price, short time-to-market), leaving producers with no economic incentive to invest in developing high-quality solutions. For secure chats, this implies that commercial success of a messaging application is by no means a measure of its actual security. \\ 
 
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Problem 1: Trust Establishment]\hfill \\
@@ -148,7 +150,7 @@ Discussing secure messaging in more detail and comparing different solutions req
     \item[Problem 2: Conversation Security]\hfill \\
         Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the \emph{conversation's content}? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
     \item[Problem 3: Transport Privacy]\hfill \\
-        Once we have secured the content of our messages, how do we actually \emph{send} them so as to \emph{hide their metadata} (e.g. sender identity, recipient identity, conversation to which the message belongs etc)?
+        Once we have secured the content of our messages, how do we actually \emph{send} them so as to \emph{hide their metadata} (\textit{e.g.} sender identity, recipient identity, conversation to which the message belongs etc)?
 \end{description}
 The area of focus for this project is \emph{conversation security} (Problem 2 above).
 
@@ -160,7 +162,7 @@ The scheme relies on Diffie-Hellman key exchange for deriving a common key which
 
 As compared to other conversation security solutions \cite{unger2015sok}, KleeQ finds a good balance between security and usability characteristics which makes it a promising candidate for use in general-purpose messaging applications. \\
 
-The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) omitted some details in the protocol's description and only provided an unstable proof-of-concept implementation. This project aims to take their work further by re-implementing KleeQ from scratch preserving all of its security guarantees, and evaluating its performance and practicality for use in everyday messaging. More specifically, the objectives are as follows:
+The authors of KleeQ (Reardon \textit{et al.}, \cite{reardon2007kleeq}) omitted some details in the protocol's description and only provided an unstable proof-of-concept implementation. This project aims to take their work further by re-implementing KleeQ from scratch preserving all of its security guarantees, and evaluating its performance and practicality for use in everyday messaging. More specifically, the objectives are as follows:
 
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Implementation] \hfill \\
@@ -204,7 +206,7 @@ The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) omitted some detai
 %
 %Whilst having an unconventional design, KleeQ strikes a good balance between security characteristics and usability, which seems to be the key trade-off in secure messaging at the moment. \\
 %
-%The authors of KleeQ (Reardon et al, \cite{reardon2007kleeq}) described the core components of the protocol in sufficient detail, but only provided an unstable proof-of-concept implementation in Python. This project aims to build on their work, with the objectives summarised as follows:
+%The authors of KleeQ (Reardon \textit{et al.}, \cite{reardon2007kleeq}) described the core components of the protocol in sufficient detail, but only provided an unstable proof-of-concept implementation in Python. This project aims to build on their work, with the objectives summarised as follows:
 %\begin{description}[labelindent=0.5cm, leftmargin=1.3cm]
 %    \item[Implementation] \hfill \\
 %        Fill out the gaps in the protocol's description and construct a more robust implementation in Java, preserving the security features of the original design.
@@ -236,7 +238,7 @@ KleeQ takes its name from the word ``clique'', which is a graph-theoretic term f
     \includegraphics[scale = 0.5]{pics/clique.png}
     \caption{Clique of size $n = 6$ \label{fig:clique}}
 \end{figure}
-The protocol assumes that conversation participants form a clique (i.e. no two of them are strangers) and that all clique members are trustworthy (i.e. that the problem of Trust Establishment from \cref{sec:intro.overview_sec_mess} has already been solved via other means). 
+The protocol assumes that conversation participants form a clique (\textit{i.e.} no two of them are strangers) and that all clique members are trustworthy (\textit{i.e.} that the problem of Trust Establishment from \cref{sec:intro.overview_sec_mess} has already been solved via other means). 
 
 
 \subsection{Clique formation}
@@ -469,10 +471,10 @@ In order to implement and run KleeQ, it was necessary to address some secondary 
     \item[Contact Discovery] \hfill \\
         How do we know where our peers reside? Which IP-addresses do we send messages to?
     \item[Transport] \hfill \\
-        How do we send messages to peers are not publicly addressable on the Internet? What if they have a non-pubic IP-address (e.g. if they are behind a NAT)?
+        How do we send messages to peers are not publicly addressable on the Internet? What if they have a non-pubic IP-address (\textit{e.g.} if they are behind a NAT)?
 \end{description}
 
-Both of these issues can be solved in a completely distributed fashion in a ``pure'' P2P way (e.g. using distributed hash tables), but in order to meet the time constraints of this project it was decided to use a centralised server-based solution. \\
+Both of these issues can be solved in a completely distributed fashion in a ``pure'' P2P way (\textit{e.g.} using distributed hash tables), but in order to meet the time constraints of this project it was decided to use a centralised server-based solution. \\
 
 For the purpose of running KleeQ two server ``scaffolding'' applications were designed:
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
@@ -505,13 +507,13 @@ In order to make writing code easier, a rough object-oriented design of the core
     \caption{\label{fig:core_uml} Core part of the client application}
 \end{figure}
 
-Each of these three classes are \emph{active}, i.e. they are running as separate threads. Communicator is in charge of sending and receiving messages (directly via TCP or via Store-and-Forward). When a message is received, the Communicator gives a callback to class Client which demultiplexes the message into the appropriate Clique (as specified in \cref{ssec:prep.proto.msg_fmt}) by redirecting the callback to it. Class Clique is responsible for performing most of the actual protocol (as per \cref{sec:prep.proto}), including patching, sealing, key management etc. When Clique needs to send a message, it uses the Communicator for this. Apart from re-directing messages to the right cliques, the Client class is also handing the interaction with the user (e.g. command-line interface or GUI).
+Each of these three classes are \emph{active}, \textit{i.e.} they are running as separate threads. Communicator is in charge of sending and receiving messages (directly via TCP or via Store-and-Forward). When a message is received, the Communicator gives a callback to class Client which demultiplexes the message into the appropriate Clique (as specified in \cref{ssec:prep.proto.msg_fmt}) by redirecting the callback to it. Class Clique is responsible for performing most of the actual protocol (as per \cref{sec:prep.proto}), including patching, sealing, key management etc. When Clique needs to send a message, it uses the Communicator for this. Apart from re-directing messages to the right cliques, the Client class is also handing the interaction with the user (\textit{e.g.} command-line interface or GUI).
 
 \section{Implementation Strategy}
 \label{sec:prep.impl_strat}
 It became clear early on that before commencing the implementation of the actual protocol the following preparatory steps needed to be taken:
 \begin{itemize}
-    \item Building and testing the ``scaffolding'' server components, i.e. the Address Book and the Store-and-Forward.
+    \item Building and testing the ``scaffolding'' server components, \textit{i.e.} the Address Book and the Store-and-Forward.
     \item Implementing the transport functionality on the client side (class Communicator in Figure \ref{fig:core_uml}).
     \item Preparing a simple command-line interface to be able to test different parts of the code without changing it (part of class Client in Figure \ref{fig:core_uml}).
 \end{itemize}
@@ -604,7 +606,7 @@ This application is essentially an online look-up table which is used by client 
 All of these commands are defined as Flask callback, similar to the example above. The implementation is based on a hash map (or dictionary, in Python parlance) which maps unique user names (\emph{userIDs}) to network address strings. When a user checks-in, their record is updated. In addition, every record contains the time of last check-in which is used to clear out stale records as users go offline. If a check-in happens from an IP-address belonging to the private range, then the system records it as "0.0.0.0:0", which serves as a signal for everyone that this user cannot be reached directly and all communication with them should be happening through the store-and-forward service.
 
 \subsubsection{Store-an-Forward}
-The operation of this component is analogous to that of a pigeonhole area at a Cambridge college. Users leave their communications (encrypted or otherwise) in ``pigeonholes'' marked with unique userIDs which are regularly emptied by their owners. The purpose of this arrangement is to facilitate communication in cases when a direct TCP connection cannot be easily made (e.g. when the destination resides behind a NAT). Table \ref{tab:saf} presents the function set of the service.
+The operation of this component is analogous to that of a pigeonhole area at a Cambridge college. Users leave their communications (encrypted or otherwise) in ``pigeonholes'' marked with unique userIDs which are regularly emptied by their owners. The purpose of this arrangement is to facilitate communication in cases when a direct TCP connection cannot be easily made (\textit{e.g.} when the destination resides behind a NAT). Table \ref{tab:saf} presents the function set of the service.
 
 \begin{table}[H]
 \centering
@@ -656,7 +658,7 @@ At this point, the reader may be wondering why threads for \emph{both} direct TC
 \end{figure}
 
 
-The Communicator class also contains a \texttt{send()} method which uses the data in the Address Book to decide which of the two transport options (direct TCP or SaF) to use for the given destination, and sends the message. The method returns a boolean value, depending on whether transmission has been successful (sending could fail e.g. if client is offline).
+The Communicator class also contains a \texttt{send()} method which uses the data in the Address Book to decide which of the two transport options (direct TCP or SaF) to use for the given destination, and sends the message. The method returns a boolean value, depending on whether transmission has been successful (sending could fail \textit{e.g.} if client is offline).
 
 
 \subsection{A simple CLI}
@@ -696,7 +698,7 @@ The implementation of the interface above is contained in the CLIClient class wh
 \includegraphics[width = 0.31 \linewidth]{pics/CLIClient_uml.png}
 \caption{\label{fig:CLIClient_uml} The CLI is implemented in the class CLIClient}
 \end{figure}
-This proved to be very convenient later on, since implementing other types of interfaces (e.g. GUI) could be neatly done by creating another subclass of Client and writing a different version of the \texttt{run()} method.
+This proved to be very convenient later on, since implementing other types of interfaces (\textit{e.g.} GUI) could be neatly done by creating another subclass of Client and writing a different version of the \texttt{run()} method.
 
 The logic of the interface was coded as an infinite loop which takes keyboard input, breaks it down into terms and then tries to match them against a sequence of conditionals that correspond to different commands. If a match happens, the appropriate functions are called and relevant output is given.
 
@@ -789,7 +791,7 @@ G  =  2
 \end{lstlisting}
 which is a 4096-bit group recommended for use in Internet key exchange (IKE) in RFC3526 \cite{kivinen2003more}.\\
 
-The Diffie-Hellman procedures were implemented manually rather than using a library solution, for didactic reasons. A more advanced library implementation (e.g. based on elliptic curves) can always be easily substituted in place of the existing one if necessary --- this would only require changing the \texttt{getDHParam()} and \texttt{acceptDHParam()} methods. \\ 
+The Diffie-Hellman procedures were implemented manually rather than using a library solution, for didactic reasons. A more advanced library implementation (\textit{e.g.} based on elliptic curves) can always be easily substituted in place of the existing one if necessary --- this would only require changing the \texttt{getDHParam()} and \texttt{acceptDHParam()} methods. \\ 
 
 For encryption, the Cryptographer uses AES --- the block cipher which seems to be the de-facto standard for symmetric encryption at the moment. We use keys of length 128 bits, as recommended by the German Office of Information Security (BSI) for use up until year 2021 \cite{margraf2016kryptographische}. Stronger cryptography (AES192 or AES256) can be enabled with almost no changes to the code (just need to change the key size constant), but this requires manual installation of the Java Cryptography Extension (JCE) which would have a negative usability effect or would necessitate the creation of an installer program. Our implementation uses AES128 in \emph{counter mode} (CTR) with the initial vector generated by a secure pseudo-random number generator. This choice was made because our messages are generally of variable length and CTR is space-efficient in this case since it requires no padding. \\
 
@@ -857,7 +859,7 @@ The messages are converted to JSON strings as before.
 
 
 \subsubsection{Details of implementation}
-As mentioned before, the Clique class is \emph{active}, i.e. it contains a \texttt{run()} method whose code is executed in a separate thread. This thread is used to send out patch requests --- there is an infinite loop that regularly sends out a \emph{patching burst}, where we send a patch request to each of the conversation participants. To make sure that users do not query each other in lockstep, the process is randomised --- the time between bursts is a random uniformly distributed quantity, as is the spacing between requests within a single burst. In addition, in order to reduce the amount of consumed traffic and not send too many redundant requests, we have a timeout mechanism --- we keep the time of the last request sent to each user in a hash map, and only re-send after a specific period of time. \\
+As mentioned before, the Clique class is \emph{active}, \textit{i.e.} it contains a \texttt{run()} method whose code is executed in a separate thread. This thread is used to send out patch requests --- there is an infinite loop that regularly sends out a \emph{patching burst}, where we send a patch request to each of the conversation participants. To make sure that users do not query each other in lockstep, the process is randomised --- the time between bursts is a random uniformly distributed quantity, as is the spacing between requests within a single burst. In addition, in order to reduce the amount of consumed traffic and not send too many redundant requests, we have a timeout mechanism --- we keep the time of the last request sent to each user in a hash map, and only re-send after a specific period of time. \\
 
 This scheme has a lot of parameters that we can vary --- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic/energy consumption. \\
 
@@ -1039,7 +1041,7 @@ A GUI was built to assess the usability implications of using KleeQ, as well as 
     \includegraphics[width=0.94\linewidth]{pics/GUI.png}
     \caption{\label{fig:GUI} Interface layout and functionality.}
 \end{figure}
-Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications (e.g. Viber, Telegram), to make sure it is familiar to anyone who has ever used messengers before. \\
+Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications (\textit{e.g.} Viber, Telegram), to make sure it is familiar to anyone who has ever used messengers before. \\
 
 In terms of design, out interface is based on a single screen with functionality for creating new groups and adding users implemented as pop-up windows (Figure \ref{fig:GUI_create} and Figure \ref{fig:GUI_add}).
 
@@ -1065,7 +1067,7 @@ The interface is based on the Swing framework, and was constructed using the vis
     \includegraphics[width=0.45\linewidth]{pics/GUIClient.png}
     \caption{\label{fig:GUIClient} GUIClient implements the GUI logic.}
 \end{figure}
-In brief, the constructor of the class instantiates JFrame and adds callbacks to all the GUI elements contained in  it (text fields, buttons etc), which handle user input and output. The inherited \texttt{run()} method makes the frame visible to the user, allowing them to interact with the program. The fact that GUIClient is a subclass of Client (see Figure \ref{fig:Client_UI}) enables a simple communication model between the two --- GUIClient can get the necessary information by accessing \texttt{protected} fields and methods in Client, whereas Client can talk to GUIClient by calling the abstract methods that GUIClient implementes (e.g. \texttt{setIsOnline()}, \texttt{updateContent()}). This kind of communication between classes makes the UI very efficient --- the Client explicitly requests an interface refresh when some significant change happens (e.g. a new message arrives), which requires much less computing power than busy-waiting on several data structures. {\color{red} Is it clear what I mean??}
+In brief, the constructor of the class instantiates JFrame and adds callbacks to all the GUI elements contained in  it (text fields, buttons etc), which handle user input and output. The inherited \texttt{run()} method makes the frame visible to the user, allowing them to interact with the program. The fact that GUIClient is a subclass of Client (see Figure \ref{fig:Client_UI}) enables a simple communication model between the two --- GUIClient can get the necessary information by accessing \texttt{protected} fields and methods in Client, whereas Client can talk to GUIClient by calling the abstract methods that GUIClient implementes (\textit{e.g.} \texttt{setIsOnline()}, \texttt{updateContent()}). This kind of communication between classes makes the UI very efficient --- the Client explicitly requests an interface refresh when some significant change happens (\textit{e.g.} a new message arrives), which requires much less computing power than busy-waiting on several data structures. {\color{red} Is it clear what I mean??}
 
 \section{Summary}
 In this chapter, the reader was familiarised with how {\funkytt N0NaMe} was taken from a conceptual description to a concrete implementation. In particular, in \cref{sec:impl.prep} we have looked at the auxilliary ``scaffolding'' components that were constructed before the core protocol, and then (in \cref{sec:impl.proto}) went over the series incremental steps taken to implement KleeQ itself. At this stage, some steps were taken to simplify the process of evaluation whose details and findings are presented in the next chapter.
@@ -1095,7 +1097,7 @@ The recent public outcry in response to mass surveillance programs carried out b
     \item[Problem 3: Conversation Security]\hfill \\
         Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the messages' content? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
     \item[Problem 4: Transport Privacy]\hfill \\
-        What is the mechanics for actually sending the message so as to hide the message metadata (e.g. sender identity, recipient identity, conversation to which the message belongs etc).
+        What is the mechanics for actually sending the message so as to hide the message metadata (\textit{e.g.} sender identity, recipient identity, conversation to which the message belongs etc).
 \end{description}
 
 \vspace{\baselineskip}
@@ -1109,7 +1111,7 @@ Multiple protocols, with different threat definitions and varying levels of secu
     \item message authorship repudiation
     \item conversation participation repudiation
 \end{itemize}
-KleeQ has been designed for devices with transient connectivity (e.g. communication via Bluetooth or wireless), but the ideas introduced by this protocol can be used in the general setting of group messaging over a network.
+KleeQ has been designed for devices with transient connectivity (\textit{e.g.} communication via Bluetooth or wireless), but the ideas introduced by this protocol can be used in the general setting of group messaging over a network.
 
 \vspace{\baselineskip}
 \noindent
@@ -1170,7 +1172,7 @@ All of the above are available in the form of open-source libraries which can be
 
 \vspace{\baselineskip}
 \noindent
-In addition, an effort may be made to improve the usability of the application. With this in mind, the GUI will be refined to match the usability of the most ubiquitous messenger applications (e.g. WhatsApp, Viber, Telegram etc).
+In addition, an effort may be made to improve the usability of the application. With this in mind, the GUI will be refined to match the usability of the most ubiquitous messenger applications (\textit{e.g.} WhatsApp, Viber, Telegram etc).
 
 
 

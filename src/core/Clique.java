@@ -75,16 +75,14 @@ public class Clique extends Thread {
 
         // various time parameters of the patching algo (in seconds)
         // TODO: might need to tweak the delays later
-        final int PATCH_REQUEST_PERIOD_LOW = 1;
-        final int PATCH_REQUEST_PERIOD_HIGH = 5;
-        final int PATCH_REQUEST_TIMEOUT = 10;
+        final int PATCH_REQUEST_TIMEOUT = (int) (3.0 / Utils.PATCH_FREQ); // triple the average patching period (s)
 
         Random rn = new Random();
         while(true) {
-            int delay = PATCH_REQUEST_PERIOD_LOW * 1000 +
-                    rn.nextInt((PATCH_REQUEST_PERIOD_HIGH - PATCH_REQUEST_PERIOD_LOW) * 1000);
-                                                                                        // between 1000 and 5000 ms
-            Utils.sleep(delay);
+
+            int delay = (int) (Utils.expRandom(Utils.PATCH_FREQ) * 1000); // exponential inter-burst times (ms)
+
+            Utils.sleep(delay); // inter-burst sleep
 
             // clean up expired patch requests from pendingPatchRequests
             for (Iterator<Map.Entry<String, Long>> it = pendingPatchRequests.entrySet().iterator(); it.hasNext(); ){
@@ -95,6 +93,7 @@ public class Clique extends Thread {
             }
 
             // issue a randomly spaced burst of patch requests
+            double INTRA_BURST_FREQ = 3.0 * members.size() * Utils.PATCH_FREQ; // frequency of emission inside a burst
             for(String userID: members.keySet()) {
                 if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.containsKey(userID)) {
                     UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
@@ -102,7 +101,7 @@ public class Clique extends Thread {
                     String toTransmit = encryptAndMac(urm);
                     comm.send(userID, toTransmit);
                     pendingPatchRequests.put(userID, System.currentTimeMillis());
-                    Utils.sleep(rn.nextInt(500)); // sleep 0 to 500 ms
+                    Utils.sleep((int)(Utils.expRandom(INTRA_BURST_FREQ) * 1000)); // sleep 0 to 500 ms
                 }
             }
 

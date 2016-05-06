@@ -1,25 +1,25 @@
 #!/usr/local/bin/python3
-
-import subprocess as sp
-from time import sleep, time
-
 import numpy as np
-
-from common.NonameInstance import NonameInstance
+import os
+from time import sleep, time
+from NonameInstance import NonameInstance
 
 N = 30
+M = 3
 groupName = "grp"
+
 
 def millis():
     return int(round(time() * 1000))
 
-def prop_delay_vs_N(Nmax):
 
+if __name__ == "__main__":
 
     instances = list()
 
-    f = open("prop_delay_vs_N(3).txt", "w")
+    os.chdir("prop_delay")
 
+    f = open("results/prop_delay_vs_N(4).txt", "w")
 
     leaderInst = NonameInstance()
     instances.append(leaderInst)
@@ -30,7 +30,7 @@ def prop_delay_vs_N(Nmax):
     leaderInst.create(groupName)
     print("Leader instance has successfully created a group with name %s" % groupName)
 
-    for i in range(1, Nmax):
+    for i in range(1, N):
         print("N = %d" % (i + 1))
 
         newInst = NonameInstance()
@@ -38,15 +38,14 @@ def prop_delay_vs_N(Nmax):
 
         print("\tCreated a new instance with name %s" % newInst.userID)
 
-        sleep(10) # make sure everyone gets the new guy in their address books
+        sleep(7)  # make sure everyone gets the new guy in their address books
 
         # leader adds the new guy
         leaderInst.add(newInst.userID, groupName)
-        sleep(5) # make sure all DH noise is gone
+        sleep(2)  # make sure all DH noise is gone
         print("\tLeader instance has successfully added the newcomer to the group")
 
         # new guy sends out messages, to see how long they propagate
-        M = 50
         results = list()
         print("\tNewcomer sends %d messages, to estimate how long they propagate." % M)
         for j in range(M):
@@ -55,7 +54,7 @@ def prop_delay_vs_N(Nmax):
             t0 = millis()
 
             haventReceived = set(map(lambda x: x.userID, instances))
-            while(haventReceived):
+            while (haventReceived):
                 for inst in instances:
                     hist = inst.getHistory(groupName)
                     l = list(map(lambda d: (d["author"], d["text"]), hist))
@@ -80,20 +79,3 @@ def prop_delay_vs_N(Nmax):
         inst.exit()
 
     print("Finished!")
-
-
-def snapshot():
-
-    f = open("nettop.txt", "r")
-
-    while(True):
-        for line in f:
-            print(line)
-
-        f.seek(0)
-        sp.call("clear")
-
-
-if __name__ == "__main__":
-
-    prop_delay_vs_N(10)
