@@ -9,7 +9,7 @@ import java.util.UUID;
  */
 public class Utils {
 
-    public static double PATCH_FREQ = 0.33; // once every 3 seconds, on average;
+    public static int PATCH_PERIOD = 3000; // by default, once every 3 s, on average;
 
     public static void sleep(long millis) {
         try {
@@ -22,10 +22,6 @@ public class Utils {
 
     public static String randomAlphaNumeric(int length) {
         return UUID.randomUUID().toString().replace("-", "").substring(0, length);
-    }
-
-    public static double expRandom(double lambda) {
-        return Math.log(1.0 - Math.random()) / (-lambda);
     }
 
 

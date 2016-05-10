@@ -18,7 +18,7 @@ public class AddressBook {
 
 
     private static final String servUrl = "http://pberkovich1994.pythonanywhere.com";
-    private static final Integer REFRESH_RATE = 5; // refresh rate for the book (in seconds)
+    private static final Integer REFRESH_RATE = 3; // refresh rate for the book (in seconds)
 
 
     private static HashMap<String, InetSocketAddress> book;

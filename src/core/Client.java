@@ -49,8 +49,7 @@ abstract public class Client implements Runnable {
         }
 
         if(argv.length >= 2) { // we have 2 or more options ->  patching period has been specified
-            double PATCH_PERIOD = Double.parseDouble(argv[1]);
-            Utils.PATCH_FREQ = 1.0 / PATCH_PERIOD;
+            Utils.PATCH_PERIOD = Integer.parseInt(argv[1]);
         }
 
         // try to reach out to address book

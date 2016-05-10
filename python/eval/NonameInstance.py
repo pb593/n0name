@@ -1,16 +1,17 @@
-import re
-import random
-import subprocess as sp
 import json
+import random
+import re
+import subprocess as sp
 from time import sleep
 
 
 class NonameInstance:
-    def __init__(self, userID=None, patch_period=5):
+    def __init__(self, userID=None, patch_period=3000):
         if userID is None:
             userID = ''.join(random.choice('0123456789abcdef') for i in range(10))
 
         self.userID = userID
+        self.patch_period = patch_period
         self.proc = sp.Popen(["java", "-jar", "../part2proj.jar", "-m", str(patch_period) , userID], stdin=sp.PIPE, stdout=sp.PIPE)
 
     def __command(self, cmd):

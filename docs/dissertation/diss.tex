@@ -65,6 +65,10 @@
 % tt for NoNaMe
 \newcommand{\funkytt}{\fontfamily{AnonymousPro}\selectfont}
 
+% itemize in tabular
+\usepackage{booktabs}% http://ctan.org/pkg/booktabs
+\newcommand{\tabitem}{~~\llap{\textbullet}~~}
+
 \newcommand{\skippage}{\newpage\null\newpage}
 
 \newcommand*{\titleTH}{ % title page
@@ -136,9 +140,9 @@ I, Pavel Berkovich of St John's College, being a candidate for Part II of the Co
 \chapter{Introduction}
 \label{ch:intro}
 
-\section{Overview of Secure Messaging}
+\section{Overview of secure messaging}
 \label{sec:intro.overview_sec_mess}
-The era of global communication has presented humanity with many opportunities, but has also made our private lives more vulnerable to intrusion. Given the broad range of cyber-threats that our society is facing today, there is now significant demand for secure communication systems. The recent disclosures about widespread state surveillance programmes demonstrated the massive scale of the resources that a potential adversary might posses, and lead to fundamental change in public perception of what security means. As a result, we are now witnessing an unprecedented level of effort to develop messaging systems emphasising security and privacy. Some of these systems enjoyed considerable popularity whilst others remained largely unknown to non-experts, but each of them has been found to have some security flaws\footnote{\url{https://www.eff.org/secure-messaging-scorecard}} or usability problems.\\
+The era of global communication has presented humanity with many opportunities, but has also made our private lives more vulnerable to intrusion. Given the broad range of cyber-threats that our society is facing today, there is now significant demand for secure communication systems. The recent disclosures about widespread state surveillance programmes demonstrated the massive scale of the resources that a potential adversary might possess, and lead to fundamental change in public perception of what security means. As a result, we are now witnessing an unprecedented level of effort to develop messaging systems emphasising security and privacy. Some of these systems have enjoyed considerable popularity whilst others remained largely unknown to non-experts, but each of them has been found to have some security flaws\footnote{\url{https://www.eff.org/secure-messaging-scorecard}} or usability problems.\\
 
 Discussing secure messaging in more detail and comparing different solutions requires a clearly defined threat model and a systematic evaluation framework. One possible approach was proposed by Unger \textit{et al.}~\cite{unger2015sok} in a recent survey of the existing secure messaging systems which identified three key problems that any secure messenger must solve, namely:
 
@@ -154,11 +158,11 @@ Discussing secure messaging in more detail and comparing different solutions req
 \end{description}
 The area of focus for this project is \emph{conversation security} (Problem 2 above).
 
-\section{Aims of the Project}
+\section{Aims of the project}
 \label{sec:intro.aims}
 This project aims to build on KleeQ \cite{reardon2007kleeq} --- a peer-to-peer conversation security protocol that protects the content of conversation in a fully connected group (clique) of trusted participants communicating in a broadcast manner. \\
 
-The scheme relies on Diffie-Hellman key exchange for deriving a common key which is used for encryption and message authentication. Protocol uses the \emph{patching algorithm} to exchange messages and converge on a global transcript. To ensure integrity of the conversation, the transcript is then verified in blocks of several messages via the process of \emph{sealing}. KleeQ achieves forward and backward secrecy by asynchronously rotating keys after a block is sealed, meaning that a compromised key only gives the adversary the ability to read messages within one block, but not in the previous or subsequent ones. The protocol enables users to repudiate authorship of specific messages as well as participation in a given conversation, since it only uses the common keys derived as part of the conversation to authenticate messages and makes no use of public keys. The asynchronous nature of the protocol makes it resilient to unstable network conditions and makes it possible to write messages while offline and then re-converge on a single transcript when connection is re-established. \\
+The scheme relies on Diffie-Hellman key exchange for deriving a common key which is used for encryption and message authentication. The protocol uses the \emph{patching algorithm} to exchange messages and converge on a global transcript. To ensure integrity of the conversation, the transcript is then verified in blocks of several messages via the process of \emph{sealing}. KleeQ achieves forward and backward secrecy by asynchronously rotating keys after a block is sealed, meaning that a compromised key only gives the adversary the ability to read messages within one block, but not in the previous or subsequent ones. The protocol enables users to repudiate authorship of specific messages as well as participation in a given conversation, since it only uses the common keys derived as part of the conversation to authenticate messages and makes no use of public keys. The asynchronous nature of the protocol makes it resilient to unstable network conditions and makes it possible to write messages while offline and then re-converge on a single transcript when connection is re-established. \\
 
 As compared to other conversation security solutions \cite{unger2015sok}, KleeQ finds a good balance between security and usability characteristics which makes it a promising candidate for use in general-purpose messaging applications. \\
 
@@ -226,9 +230,9 @@ This chapter has shown where this project fits in the field of secure messaging,
 
 \chapter{Preparation}
 \label{ch:prep}
-This section familiarises the reader with the work that was done before any programming began. It presents the details of the KleeQ protocol (\cref{sec:prep.proto}), as well as the formal requirements for what needs to be accomplished (\cref{sec:prep.requirements}). Then it describes some preliminary design work (\cref{sec:prep.design}) and the expected implementation strategy (\cref{sec:prep.impl_strat}). In the end of this section, we discuss some of the technology and tools that were used in this project (\cref{sec:choices}).
+This section familiarises the reader with the work that was done before any programming began. It presents the details of the KleeQ protocol (\cref{sec:prep.proto}), as well as the formal requirements for what needs to be accomplished (\cref{sec:prep.requirements}). Then it describes some preliminary design work (\cref{sec:prep.design}) and the expected implementation strategy (\cref{sec:prep.impl_strat}). At the end of this section, we discuss some of the technology and tools that were used in this project (\cref{sec:choices}).
 
-\section{Protocol Description}
+\section{Protocol description}
 \label{sec:prep.proto}
 
 \subsection{Assumptions}
@@ -243,7 +247,7 @@ The protocol assumes that conversation participants form a clique (\textit{i.e.}
 
 \subsection{Clique formation}
 \label{subsec:prep.formation}
-Every clique has a \emph{common secret} that all participants share and which is regularly updated. When a clique is started, members are added one-by-one. One of the members first creates a singleton clique with a random secret, and then adds other participants. To add a user, one of the clique members performs a Diffie-Hellman key exchange \cite{diffie1976new} with the them, using the current clique secret as the secret exponent, thereby negotiating a new common secret based on the previous one. When other clique members are notified of the new user, they also update their version of the secret. \\
+Every clique has a \emph{common secret} that all participants share and which is regularly updated. When a clique is started, members are added one-by-one. One of the members first creates a singleton clique with a random secret, and then adds other participants. To add a user, one of the clique members performs a Diffie-Hellman key exchange \cite{diffie1976new} with them, using the current clique secret as the secret exponent, thereby negotiating a new common secret based on the previous one. When other clique members are notified of the new user, they also update their version of the secret. \\
 
 Diffie-Hellman is a key exchange protocol that allows two parties to establish a common secret over an insecure channel. It uses two fixed publicly known parameters $G$ and $P$, such that $G$ is a generator of the cyclic group of order $P$. Let's say user Alice is a member of an existing clique with common secret $s$, and she wants to invite user Bob to the conversation. 
 \begin{figure}[h]
@@ -261,18 +265,19 @@ An adversary who can observe this exchange and see both $M_{AB}$ and $M_{BA}$ ha
 
 \subsection{Exchanging messages}
 \label{subsec:prep.patching}
-Clique members exchange messages through the procedure of \emph{patching}. This process needs two pieces of information that each user maintains -- the current \emph{transcript} of the conversation and the \emph{version vector}. The version vector is a vector of same size as the clique, where each entry corresponds to the number of messages authored by a particular conversation participant. The \emph{patching algorithm} is then as follows: \\ 
+Clique members exchange messages through the procedure of \emph{patching}. This process needs two pieces of information that each user maintains -- the current \emph{transcript} of the conversation and the \emph{version vector}. The version vector is a vector of same size as the clique, where each entry corresponds to the number of messages authored by a particular conversation participant. The \emph{patching algorithm} is then as follows:
 \begin{algorithm}
 \caption{The Patching Algorithm}
 \label{alg:patching}
+\vspace{2pt}
 {\bfseries Alice}
-\begin{enumerate}
+\begin{enumerate}[topsep=2pt, itemsep=2pt]
     \item Sends her version vector $v_A = (v_{A1}, v_{A2}, ..., v_{An})$ to Bob. \\
 \end{enumerate}
-
+\vspace{-2pt}
 {\bfseries Bob}
-\begin{enumerate}
-    \item Calculates the difference between his own version vector and the one sent by Alice, to see what messages she is missing:
+\begin{enumerate}[topsep=2pt, itemsep=2pt]
+    \item Calculates the difference between his own version vector and the one sent by Alice, to see which messages she is missing:
         \begin{equation*}
             v_{\Delta} = v_B - v_A
         \end{equation*}
@@ -287,18 +292,19 @@ Clique members exchange messages through the procedure of \emph{patching}. This 
         \end{algorithmic}
     \item Send the \textit{Patch} and version vector $v_B$ to Alice. \\
 \end{enumerate}
-
+\vspace{-2pt}
 {\bfseries Alice}
-\begin{enumerate}
+\begin{enumerate}[topsep=2pt, itemsep=2pt]
     \item Insert the messages provided by Bob into transcript.
-    \item As above, compute difference between $v_A$ and $v_B$, to see what messages Bob is missing.
+    \item As above, compute difference between $v_A$ and $v_B$, to see which messages Bob is missing.
     \item As above, generate a \textit{Patch} and send it to Bob. \\
 \end{enumerate}
-
+\vspace{-2pt}
 {\bfseries Bob}
-\begin{enumerate}
+\begin{enumerate}[topsep=2pt, itemsep=2pt]
     \item Insert the messages provided by Alice into transcript.
 \end{enumerate}
+\vspace{2pt}
 \end{algorithm}
 
 The above exchange happens regularly between every pair of clique members, and makes sure that their views of the transcript contain the same messages. \\
@@ -323,10 +329,6 @@ It can be formally proven \cite{reardon2007kleeq} that exchanging messages as sp
 In an ideal situation, just using the scheme above will allow the clique to converge on the correct single transcript. However, in the more realistic setting where network errors can occur or a malicious adversary can try to inject fake content, measures must be taken to verify the \emph{integrity} of the conversation. In other words, it is necessary to make sure that all users have the same view of the conversation. This is done using the process of \emph{block sealing}. \\
 
 In brief, the scheme involves the clique members independently dividing the transcript into blocks in a deterministic fashion and \emph{sealing} them by comparing the hashes of their content. For this to work correctly, it is necessary to choose blocks to be sealed in a way which would guarantee that all messages in them have been received and none are missing. This task is performed by the \emph{block finding algorithm} (Algorithm \ref{alg:block_find}). \\
-
-Intuitively, in Stage 1 the algorithms scans the unsealed part of the transcript (its \emph{tail}) backwards, starting with most recent messages, until it has seen at least one message authored by each of the clique members. Because of how the patching algorithm works, it is certain that the remaining, less recent part of the transcript (also referred to as the \emph{sealable set}) contains no missing messages. In Stage 2, blocks are extracted from the sealable set by scanning it in chronological order and taking the smallest message subsequence in which every user has authored at least one message. There is a formal proof \cite{reardon2007kleeq}, omitted here for brevity, that this algorithm allows the clique members to compute identical blocks independently. {\color{red} Pic to illustrate this?}\\
-
-Every block is given a sequential number. When a block is found, the concatenation of its sequential number and its messages are hashed to compute the \emph{fingerprint} of the block, which the clique members then verify with each other. After verification, the sealed blocks are \emph{safely deleted}, which is partly how forward secrecy is achieved\footnote{Given a compromised key and subsequent }.
 
 \begin{algorithm}
 \caption{The Block Finding Algorithm}
@@ -386,9 +388,13 @@ Every block is given a sequential number. When a block is found, the concatenati
     \end{enumerate}
 
 \end{algorithmic}
-
-
 \end{algorithm}
+
+Intuitively, in Stage 1 the algorithm scans the unsealed part of the transcript (its \emph{tail}) backwards, starting with most recent messages, until it has seen at least one message authored by each of the clique members. Because of how the patching algorithm works, it is certain that the remaining, less recent part of the transcript (also referred to as the \emph{sealable set}) contains no missing messages. In Stage 2, blocks are extracted from the sealable set by scanning it in chronological order and taking the smallest message subsequence in which every user has authored at least one message. There is a formal proof \cite{reardon2007kleeq}, omitted here for brevity, that this algorithm allows the clique members to compute identical blocks independently.
+
+Every block is given a sequential number. When a block is found, the concatenation of its sequential number and its messages are hashed to compute the \emph{fingerprint} of the block, which the clique members then verify with each other. After verification, the sealed blocks are \emph{safely deleted}, which is partly how forward secrecy is achieved.
+
+
 \subsection{Key management}
 \label{subsec:prep.keyman}
 As described in \cref{subsec:prep.formation}, each clique has a common secret. This secret is used to derive the \emph{key} which is then used to encrypt and authenticate the communication. The secret and the key are updated on multiple occasions. Initially, the key is calculated as:
@@ -424,7 +430,7 @@ The resulting chain of secrets and keys can be schematically summarised as follo
 Note that the key rotation scheme helps us achieve both forward and backward secrecy. Given a compromised key, extracting the previous one is essentially equivalent to online inversion of a hash function, whereas computing the next key in the chain would require the adversary to also know the current secret.
 
 
-\subsection{Message Format}
+\subsection{Message format}
 \label{ssec:prep.proto.msg_fmt}
 Another issue that we need to solve is addressing. When a KleeQ instance receives an encrypted message, it needs to determine which clique it belongs to. This is done using \emph{address tags}, which is something that each clique has at all times. It is always equal to:
 \begin{equation*}
@@ -440,13 +446,13 @@ Eventually, for a message $m$ we transmit the following:
 \end{equation*}
 Replay attacks are prevented by each $m$ containing the name of the author, name of the recipient and the sender's Lamport time.
 
-\section{Requirements Analysis}
+\section{Requirements analysis}
 \label{sec:prep.requirements}
-The requirements for the project follow directly from the aims outlined in \cref{sec:intro.aims} and success criteria mentioned in the proposal\footnote{See Appendix \ref{appendix:proposal}}. They can be summarised as follows:
-\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+The requirements for the project follow directly from the aims outlined in \cref{sec:intro.aims} and success criteria mentioned in the proposal.\footnote{See Appendix \ref{appendix:proposal}} They can be summarised as follows:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm, topsep=2pt]
     \item[Implementing the protocol] \hfill \\
         Implement the protocol exactly as specified in \cref{sec:prep.proto}, ensuring that all of its security guarantees still hold, namely:
-        \begin{itemize}
+        \begin{itemize}[topsep=1pt, itemsep=2pt]
             \item confidentiality of message content
             \item message integrity
             \item forward secrecy
@@ -456,13 +462,14 @@ The requirements for the project follow directly from the aims outlined in \cref
         \end{itemize}
 
 
-    \item[Construct a useable messaging application] \hfill \\
-        Build a simple messaging application based in our protocol implementation.     
+    \item[Constructing a useable messaging application] \hfill \\
+        Build a simple messaging application based in our protocol implementation.    
 \end{description}
+\vspace{2pt}
 It is worth pointing out that these two items are mutually dependent --- implementing and debugging the protocol requires some kind of messenger prototype to be in place. This circumstance was identified early on and taken into account when planning the work (\cref{sec:prep.impl_strat}). \\
 
 
-\section{Preliminary System Design}
+\section{Preliminary system design}
 \label{sec:prep.design}
 Some early architecture design was done before any code was written. In particular, the main classes of the implementation were conceived and thought through, and some of the additional external components necessary for operation of the protocol were engineered.
 \subsection{Secondary components}
@@ -471,7 +478,7 @@ In order to implement and run KleeQ, it was necessary to address some secondary 
     \item[Contact Discovery] \hfill \\
         How do we know where our peers reside? Which IP-addresses do we send messages to?
     \item[Transport] \hfill \\
-        How do we send messages to peers are not publicly addressable on the Internet? What if they have a non-pubic IP-address (\textit{e.g.} if they are behind a NAT)?
+        How do we send messages to peers are not publicly addressable on the Internet? What if they have a non-public IP-address (\textit{e.g.} if they are behind a NAT)?
 \end{description}
 
 Both of these issues can be solved in a completely distributed fashion in a ``pure'' P2P way (\textit{e.g.} using distributed hash tables), but in order to meet the time constraints of this project it was decided to use a centralised server-based solution. \\
@@ -507,9 +514,9 @@ In order to make writing code easier, a rough object-oriented design of the core
     \caption{\label{fig:core_uml} Core part of the client application}
 \end{figure}
 
-Each of these three classes are \emph{active}, \textit{i.e.} they are running as separate threads. Communicator is in charge of sending and receiving messages (directly via TCP or via Store-and-Forward). When a message is received, the Communicator gives a callback to class Client which demultiplexes the message into the appropriate Clique (as specified in \cref{ssec:prep.proto.msg_fmt}) by redirecting the callback to it. Class Clique is responsible for performing most of the actual protocol (as per \cref{sec:prep.proto}), including patching, sealing, key management etc. When Clique needs to send a message, it uses the Communicator for this. Apart from re-directing messages to the right cliques, the Client class is also handing the interaction with the user (\textit{e.g.} command-line interface or GUI).
+Each of these three classes are \emph{active}, \textit{i.e.} they are running as separate threads. Communicator is in charge of sending and receiving messages (directly via TCP or via Store-and-Forward). When a message is received, the Communicator gives a callback to class Client which demultiplexes the message into the appropriate Clique (as specified in \cref{ssec:prep.proto.msg_fmt}) by redirecting the callback to it. Class Clique is responsible for performing most of the actual protocol (as per \cref{sec:prep.proto}), including patching, sealing, key management etc. When Clique needs to send a message, it uses the Communicator for this. Apart from re-directing messages to the right cliques, the Client class also handles the interaction with the user (\textit{e.g.} command-line interface or GUI).
 
-\section{Implementation Strategy}
+\section{Implementation strategy}
 \label{sec:prep.impl_strat}
 It became clear early on that before commencing the implementation of the actual protocol the following preparatory steps needed to be taken:
 \begin{itemize}
@@ -536,12 +543,12 @@ Implementing KleeQ itself required a more flexible approach and the \emph{iterat
         Enhance user interaction by building a GUI. Prepare for automated evaluation by constructing a ``machine interface'' for use by testing scripts. 
 \end{description}
 
-\section{Choice of Technology, Libraries and Tools}
+\section{Technical choices}
 \label{sec:choices}
 The technology and libraries were carefully chosen so as to make the development process more smooth, as well as to allow for some flexibility and modularity.
 
 \subsection{Server side}
-Server-based components were implemented in Python, using the RESTful HTTP framework called Flask\footnote{\url{http://flask.pocoo.org}}. For the purpose of running the code, a cloud server was rented from the PaaS provider PythonAnywhere\footnote{\url{https://www.pythonanywhere.com/}}. As noted before, most of the server-side development needed to be done before writing any client code, so the testing was performed manually, using a simple utility called Postman\footnote{\url{https://www.getpostman.com/}} which allows sending custom HTTP requests and receive responses. Programming in Python was done in PyCharm IDE.
+Server-based components were implemented in Python, using the RESTful HTTP framework called Flask\footnote{\url{http://flask.pocoo.org}}. For the purpose of running the code, a cloud server was rented from the PaaS provider PythonAnywhere\footnote{\url{https://www.pythonanywhere.com/}}. As noted before, most of the server-side development needed to be done before writing any client code, so the testing was performed manually, using a simple utility called Postman\footnote{\url{https://www.getpostman.com/}} which allows sending custom HTTP requests and receiving responses. Programming in Python was done in PyCharm IDE.
 
 \subsection{Client side}
 The client-side code was written in Java, using the IntelliJ IDE. Messages were serialised into JSON strings using the json.simple\footnote{\url{https://github.com/fangyidong/json-simple}} library. The graphical interface was built using the Swing framework. The project relied on \texttt{git} for VCS, and the back-up strategy involved regular uploads to GitHub and copying to an external hard drive.
@@ -567,7 +574,7 @@ The next few sections describe in detail how these tasks were performed.
 
 \subsection{Server-side applications}
 \label{subsec:impl.prep.server}
-This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. Both server components are small HTTP services --- the choice of protocol has been motivated by a good selection of third-party libraries for HTTP communication and the fact that it usually is not blocked by firewalls.\\
+This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. Both server components are small HTTP services --- the choice of protocol has been motivated by a good selection of third-party libraries for HTTP communication and the fact that it is not usually blocked by firewalls.\\
 
 The Address Book and the Store-and-Forward (SaF) service were implemented using Flask, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
 
@@ -584,7 +591,7 @@ if __name__ == "__main__":
 \end{lstlisting}
 
 
-The framework allows to define callback functions which get invoked when an HTTP request is received for a particular URL. For example, if the program above were running on \url{www.example.com} (on port 80), then typing \url{www.example.com/hello/Pavel} into the browser would result in the function above being called and the text "Hello and welcome, Pavel!" displayed. \\
+The framework permits the defining of callback functions which get invoked when an HTTP request is received for a particular URL. For example, if the program above were running on \url{www.example.com} (on port 80), then typing \url{www.example.com/hello/Pavel} into the browser would result in the function above being called and the text "Hello and welcome, Pavel!" displayed. \\
 
 Any complex server behaviour can be achieved in a similar way. This kind of system design is called \emph{Representational State Transfer} (REST) --- requests are encoded as access requests for some resource.  All functions of our server applications are defined in this RESTful way --- they are callbacks whose invocation is triggered by HTTP requests for specific URLs, which makes the code very easy to debug using a browser.
 
@@ -632,7 +639,7 @@ As mentioned before, the server applications use HTTP to communicate with the ou
     \includegraphics[width = 0.8 \linewidth]{pics/scaffolding_uml.png}
     \caption{\label{fig:scaffolding_uml} Class diagram of the API to server components}
 \end{figure}
-In Figure \ref{fig:scaffolding_uml}, class HTTPHandler implements the functionality for sending HTTP GET and POST requests. These two methods are used by classes AddressBook and StoreAndForward to access the commands of the server applications. The rest of the client-side code can therefore use these classes to communicate with the server components as if they were available locally (\emph{access transparency}). \\
+In Figure \ref{fig:scaffolding_uml}, class HTTPHandler implements the functionality for sending HTTP GET and POST requests. These two methods are used by the classes AddressBook and StoreAndForward to access the commands of the server applications. The rest of the client-side code can therefore use these classes to communicate with the server components as if they were available locally (\emph{access transparency}). \\
 
 In an early implementation of the AddressBook class, the methods \texttt{lookup()} and \texttt{contains()} were sending an HTTP request to the server upon every invocation which considerably slowed down the whole program. To solve this problem, a simple \emph{caching system} was built-in --- the class downloads the whole address book from the server every few seconds, and the methods use this downloaded copy to compute their results. This means that the methods may return results that are slightly stale, but this does not cause any issues for KleeQ due to its inherently asynchronous nature. \\
 
@@ -643,13 +650,13 @@ In an early implementation of the AddressBook class, the methods \texttt{lookup(
 The interface described above is primarily used by the Communicator class (see Figure \ref{fig:core_uml}), which is responsible for transport and connectivity. The class contains three threads that are perpetually running:
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Address-reporting thread] \hfill \\
-        Calls the Address Book \texttt{checkin()} method every few seconds, to update/renew the server records about the address of the client. If the Address Book is unreachable then the client assumes it is offline.
+        Calls the Address Book \texttt{checkin()} method every few seconds, to update/renew the server records about the address of the client. The client is assumed to be offline if the Address Book is unreachable.
     \item[SaF Querying Thread] \hfill \\
         Calls the StoreAndForward \texttt{retrieve()} function every few seconds, and gives a callback to the Client class for each of the new messages.
     \item[TCP Socket Server Thread] \hfill \\
         Listens on a port (randomly chosen at start up) for direct TCP connections, also giving callbacks to the Client class as messages arrive.
 \end{description}
-At this point, the reader may be wondering why threads for \emph{both} direct TCP transmission and for SaF run at the same time. Indeed, as of now communication happens only though one of the two --- it is direct (via TCP) if the client is running on a public IP-address, and via SaF otherwise. However, it is worth noticing that it may be possible to connect two client directly even when they are not publicly addressable if they happen to reside on the \emph{same local network}. This feature has not been implemented so far, but would definitely be useful in the future. \\
+At this point, the reader may be wondering why threads for \emph{both} direct TCP transmission and for SaF run at the same time. Indeed, as of now communication happens only though one of the two --- it is direct (via TCP) if the client is running on a public IP-address, and via SaF otherwise. However, it is worth noticing that it may be possible to connect two clients directly even when they are not publicly addressable if they happen to reside on the \emph{same local network}. This feature has not been implemented so far, but would definitely be useful in the future. \\
 
 \begin{figure}[H]
 \centering
@@ -658,7 +665,7 @@ At this point, the reader may be wondering why threads for \emph{both} direct TC
 \end{figure}
 
 
-The Communicator class also contains a \texttt{send()} method which uses the data in the Address Book to decide which of the two transport options (direct TCP or SaF) to use for the given destination, and sends the message. The method returns a boolean value, depending on whether transmission has been successful (sending could fail \textit{e.g.} if client is offline).
+The Communicator class also contains a \texttt{send()} method which uses the data in the Address Book to decide which of the two transport options (direct TCP or SaF) to use for the given destination, and sends the message. The method returns a boolean value, depending on whether transmission has been successful (\textit{e.g.} sending could fail if the client is offline).
 
 
 \subsection{A simple CLI}
@@ -698,7 +705,7 @@ The implementation of the interface above is contained in the CLIClient class wh
 \includegraphics[width = 0.31 \linewidth]{pics/CLIClient_uml.png}
 \caption{\label{fig:CLIClient_uml} The CLI is implemented in the class CLIClient}
 \end{figure}
-This proved to be very convenient later on, since implementing other types of interfaces (\textit{e.g.} GUI) could be neatly done by creating another subclass of Client and writing a different version of the \texttt{run()} method.
+This proved to be very convenient later on, since implementing other types of interfaces (\textit{e.g.} GUI) could be neatly done by creating another subclass of Client and writing a different version of the \texttt{run()} method. \\
 
 The logic of the interface was coded as an infinite loop which takes keyboard input, breaks it down into terms and then tries to match them against a sequence of conditionals that correspond to different commands. If a match happens, the appropriate functions are called and relevant output is given.
 
@@ -708,9 +715,9 @@ The logic of the interface was coded as an infinite loop which takes keyboard in
 Once the ``scaffolding'' (server components and CLI) was completed, it became possible to proceed with the implementation of KleeQ itself, as described in \cref{sec:prep.proto}.
 
 
-\subsection{Prototype 1: Clique Formation}
+\subsection{Prototype 1: Clique formation}
 \label{subsec:impl.proto.formation}
-Building this prototype involved implementing the procedure for creating a new clique and adding users to it. At this point, messages between clients were to be sent directly, rather than via patching, to be able to implement and test cryptography more easily. This required the following tasks to be completed:
+Building this first prototype involved implementing the procedure for creating a new clique and adding users to it. At this point, messages between clients were to be sent directly, rather than via patching, to be able to implement and test the cryptography more easily. This required the following tasks to be completed:
 
 \begin{itemize}
     \item Designing an object-oriented representation for a clique such that it neatly fits into the previous design.
@@ -748,7 +755,7 @@ In terms of programming, each of the messages in Figure \ref{fig:CliqueFormation
     \caption{\label{fig:messages_uml} Classes modelling messages necessary to add a new user to a clique.}
 \end{figure}
 
-For transmission, instances of these classes are serialised into JSON strings\footnote{Third-party json-simple library was used for this (\url{https://github.com/fangyidong/json-simple})}. Using JSON was preferred over designing a custom byte-by-byte message layout because it is more flexible (can add and remove fields without changing much code), and was favoured over Java serialisation because it is not limited to Java and can make interoperability with other languages easier if the needed arises. Conversion to JSON is performed using the \texttt{toJSON()} method, declared in the JSONizable interface and implemented in each of the child classes. When a message is received, the appropriate object is reconstructed by calling the static \texttt{fromJSON()} method in the base Message class. \\
+For transmission, instances of these classes are serialised into JSON strings\footnote{The third-party library \texttt{json-simple} was used for this (\url{https://github.com/fangyidong/json-simple})}. Using JSON was preferred over designing a custom byte-by-byte message layout because it is more flexible (can add and remove fields without changing much code), and was favoured over Java serialisation because it is not limited to Java and can make interoperability with other languages easier if the needed arises. Conversion to JSON is performed using the \texttt{toJSON()} method, declared in the JSONizable interface and implemented in each of the child classes. When a message is received, the appropriate object is reconstructed by calling the static \texttt{fromJSON()} method in the base Message class. \\
 
 \subsubsection{Cryptography}
 The Clique class contains an instance of the Cryptographer (Figure \ref{fig:crypto_uml}) class that holds the key material and implements the relevant cryptographic procedures (Diffie-Hellman key exchange, encryption/decryption, MAC, message digest).
@@ -801,9 +808,10 @@ The same key is used for encryption and MACing. Whilst not recommended in genera
 \begin{equation*}
     MAC_k(cliqueName||E_k(m))
 \end{equation*}
-and there are no known interactions between AES-CTR and HMAC-SHA2. {\color{red}Correct?}
+and there are no known interactions between AES-CTR and HMAC-SHA256, since the underlying primitives are sufficiently different.
 
 \subsection{Prototype 2: Patching}
+\label{subsec:impl.proto.patch}
 As mentioned before, the first prototype relied on exchanging messages by sending them directly. Building the second prototype involved using the process of patching (\cref{subsec:prep.patching}) for communication. To do this, the following tasks needed to be accomplished:
 \begin{itemize}
     \item Designing a specialised data structure to store the message history, that would enforce the $<_L$ ordering as defined in \cref{subsec:prep.patching}
@@ -861,9 +869,7 @@ The messages are converted to JSON strings as before.
 \subsubsection{Details of implementation}
 As mentioned before, the Clique class is \emph{active}, \textit{i.e.} it contains a \texttt{run()} method whose code is executed in a separate thread. This thread is used to send out patch requests --- there is an infinite loop that regularly sends out a \emph{patching burst}, where we send a patch request to each of the conversation participants. To make sure that users do not query each other in lockstep, the process is randomised --- the time between bursts is a random uniformly distributed quantity, as is the spacing between requests within a single burst. In addition, in order to reduce the amount of consumed traffic and not send too many redundant requests, we have a timeout mechanism --- we keep the time of the last request sent to each user in a hash map, and only re-send after a specific period of time. \\
 
-This scheme has a lot of parameters that we can vary --- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic/energy consumption. \\
-
-{\color{red} Do I need source code here?}
+This scheme has a lot of parameters that we can vary --- inter-burst time spacing, intra-burst time spacing, request timeout period. These parameters can be changed depending on how intensive we want the patching process to be. The trade-off here is time-to-delivery vs traffic/energy consumption. 
 
 
 \subsection{Prototype 3: Sealing}
@@ -871,7 +877,7 @@ This scheme has a lot of parameters that we can vary --- inter-burst time spacin
 The patching algorithm allows us to converge on a single transcript. To make sure that no messages in the transcript were damaged or maliciously modified, users independently split it into \emph{blocks} in a deterministic way (as per \cref{subsec:prep.sealing}) and compare hashes of the blocks. Once we verify that everybody has the same version of a block, we can safely delete it. To implement this process, two tasks needed to be performed:
 
 \begin{itemize}
-    \item Working out the exact protocol that clique members would use to compare hashes (what messages to sent, when to send them and what bookkeeping to do).
+    \item Working out the exact protocol that clique members must use to compare hashes (what messages to sent, when to send them and what bookkeeping to do).
     \item Coming up with an object-oriented implementation for the above that would integrate well with the rest of the design.
 \end{itemize}
 The next few sections describe how these tasks were accomplished in more detail.
@@ -922,7 +928,7 @@ Bob discovers a block and signals it to Alice, but the message is unfortunately 
 
 
 \subsubsection{Details of implementation}
-The basis of the scheme described above is the block finding algorithm (Algorithm \ref{alg:block_find} from \cref{subsec:prep.sealing}). It was implemented as the \texttt{getNextSealableBlock()} method of the MessageHistory class. At this point, some of the advance planning done for the previous prototype payed off --- the fact that TreeSet had been chosen as the storage structure for messages helped implement the block finding algorithm in an efficient and straightforward way. In particular, the algorithm heavily relies on iterating over the history in both directions and taking sub-lists, and both of these operations are cheap and provided as standard methods in TreeSet. Also, a simple caching mechanism was used to not re-compute the blocks every time the \texttt{getNextSealableBlock()} is called --- the method finds the next block only once, and then re-uses its previous work on following calls when possible.\\
+The basis of the scheme described above is the block finding algorithm (Algorithm \ref{alg:block_find} from \cref{subsec:prep.sealing}). It was implemented as the \texttt{getNextSealableBlock()} method of the MessageHistory class. At this point, some of the advance planning done for the previous prototype payed off --- the fact that TreeSet had been chosen as the storage structure for messages helped implement the block finding algorithm in an efficient and straightforward way. In particular, the algorithm heavily relies on iterating over the history in both directions and taking sub-lists, and both of these operations are cheap and provided as standard methods in TreeSet. Also, a simple caching mechanism was used to avoid re-computing the blocks every time the \texttt{getNextSealableBlock()} is called --- the method finds the next block only once, and then re-uses its previous work on following calls when possible.\\
 
 A discovered block is represented by the class SealableBlock (Figure \ref{fig:sealable_block_uml}).
 
@@ -955,14 +961,14 @@ Similarly to other message types, the signalling message class (SealSignalMessag
 \end{figure}
 
 
-\subsection{Prototype 4: Key Management}
+\subsection{Prototype 4: Key management}
 Key management as described in \cref{subsec:prep.keyman} proved to be fairly easy to implement, thanks to the provident design and flexible programming performed at the previous stages. \\
 
-Key rotation due to adding a new user to the clique is automatically handled by our implementation of the clique formation routines based on Diffie-Hellman key exchange (see Prototype 1 in \cref{subsec:impl.proto.formation}). \\
+The key rotation required when adding a new user to the clique is automatically handled by our implementation of the clique formation routines based on Diffie-Hellman key exchange (see Prototype 1 in \cref{subsec:impl.proto.formation}). \\
 
 Rotating the key after a block has been sealed was implemented by just adding one extra method to the Cryptographer class:
 
-\begin{lstlisting}[language=Java, columns=fullflexible]
+\begin{lstlisting}[language=Java, columns=fullflexible, basicstyle=\scriptsize\ttfamily]
 synchronized public void rotateKey(SealableBlock sBlock) {
     /* updates the shared secret and rotates the key on block seal
     *       secret <--- MAC(K, secret)
@@ -982,9 +988,10 @@ synchronized public void rotateKey(SealableBlock sBlock) {
     secretKey = new SecretKeySpec(newSecretKeyBytes, 0, encBitLength / 8, encAlgo);
 }
 \end{lstlisting}
-As noted in \cref{subsec:impl.proto.sealing}, our sealing protocol requires users to be able to receive and send signals regarding previously sealed blocks (the case shown in Figure \ref{fig:sealing_lost}). This is implemented by always keeping the previous key in memory, in case someone needs a retransmission of the sealing signal\footnote{It is easy to show that keeping more than one old key is not necessary --- it is impossible to ``fall behind'' by more than one block.}.
+As noted in \cref{subsec:impl.proto.sealing}, our sealing protocol requires users to be able to receive and send signals regarding previously sealed blocks (the case shown in Figure \ref{fig:sealing_lost}). This is implemented by always keeping the previous key in memory, in case someone needs a retransmission of the sealing signal.\footnote{~It is easy to show that keeping more than one old key is not necessary --- it is impossible to ``fall behind'' by more than one block.}
 
 \subsection{Prototype 5: Interface}
+\label{subsec:impl.proto.interface}
 This was the final prototype whose aim was to prepare the application for evaluation and demonstration. For these purposes, two tasks needed to be accomplished:
 \begin{itemize}
     \item Building a \emph{machine interface}, to allow easy interaction of the application with the evaluation scripts.
@@ -1067,12 +1074,367 @@ The interface is based on the Swing framework, and was constructed using the vis
     \includegraphics[width=0.45\linewidth]{pics/GUIClient.png}
     \caption{\label{fig:GUIClient} GUIClient implements the GUI logic.}
 \end{figure}
-In brief, the constructor of the class instantiates JFrame and adds callbacks to all the GUI elements contained in  it (text fields, buttons etc), which handle user input and output. The inherited \texttt{run()} method makes the frame visible to the user, allowing them to interact with the program. The fact that GUIClient is a subclass of Client (see Figure \ref{fig:Client_UI}) enables a simple communication model between the two --- GUIClient can get the necessary information by accessing \texttt{protected} fields and methods in Client, whereas Client can talk to GUIClient by calling the abstract methods that GUIClient implementes (\textit{e.g.} \texttt{setIsOnline()}, \texttt{updateContent()}). This kind of communication between classes makes the UI very efficient --- the Client explicitly requests an interface refresh when some significant change happens (\textit{e.g.} a new message arrives), which requires much less computing power than busy-waiting on several data structures. {\color{red} Is it clear what I mean??}
+In brief, the constructor of the class instantiates JFrame and adds callbacks to all the GUI elements contained in  it (text fields, buttons etc), which handle user input and output. The inherited \texttt{run()} method makes the frame visible to the user, allowing them to interact with the program. The fact that GUIClient is a subclass of Client (see Figure \ref{fig:Client_UI}) enables a simple communication model between the two --- GUIClient can get the necessary information by accessing \texttt{protected} fields and methods in Client, whereas Client can talk to GUIClient by calling the abstract methods that GUIClient implements (\textit{e.g.} \texttt{setIsOnline()}, \texttt{updateContent()}). This kind of communication between classes makes the UI very efficient --- the Client explicitly requests an interface refresh when some significant change happens (\textit{e.g.} a new message arrives), which requires much less computing power than busy-waiting on several data structures.
 
 \section{Summary}
-In this chapter, the reader was familiarised with how {\funkytt N0NaMe} was taken from a conceptual description to a concrete implementation. In particular, in \cref{sec:impl.prep} we have looked at the auxilliary ``scaffolding'' components that were constructed before the core protocol, and then (in \cref{sec:impl.proto}) went over the series incremental steps taken to implement KleeQ itself. At this stage, some steps were taken to simplify the process of evaluation whose details and findings are presented in the next chapter.
+In this chapter, the reader was familiarised with how {\funkytt N0NaMe} was taken from a conceptual description to a concrete implementation. In particular, in \cref{sec:impl.prep} we looked at the auxiliary ``scaffolding'' components that were constructed before the core protocol, and then (in \cref{sec:impl.proto}) went over the series incremental steps taken to implement KleeQ itself. At this stage, some steps were taken to simplify the process of evaluation, whose details and findings are presented in the next chapter.
 
 \chapter{Evaluation}
+This chapter presents the results of systematic summative evaluation of the constructed system. More specifically, here we analyse its performance characteristics (\cref{sec:eval.perf}), consider how robust the system is (\cref{sec:eval.robust}), assess its usability properties (\cref{sec:eval.usability}) and look at what level of security it guarantees (\cref{sec:eval.security}). Based on these results, we then determine whether the initial project requirements have been satisfied (\cref{sec:eval.req}).
+
+
+\section{Performance}
+\label{sec:eval.perf}
+\subsection{Evaluation framework}
+\label{subsec:eval.pef.frame}
+Discussing performance of a system requires a systematic evaluation framework. 
+In particular, it is necessary to decide which \emph{performance characteristics} are of interest, and then determine a set of \emph{input parameters} whose variations can affect one of the relevant performance characteristics. \\
+
+
+In the case of messaging applications, the key performance characteristics include:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Messaging latency] \hfill \\
+        How long it takes for a new message to reach all clique members. The significance of this parameter varies with the type of communication (\textit{e.g.} not very important for email, but very significant for instant messaging).
+    \item[Traffic consumption] \hfill \\
+        How much traffic (uplink and downlink) is generated by the application per unit time, on average. This characteristic can have an impact on broadband bills and energy consumption, both of which are of particular relevance in the case of mobile communication.
+    \item[CPU usage] \hfill \\
+        How much CPU resources, on average, the application needs. This metric is interesting on its own, but can also be used as a proxy for energy consumption.
+    \item[Memory footprint] \hfill \\
+        How much memory space, on average, the application takes up. Just as CPU usage, this property is important from the multitasking viewpoint, and is of particular significance in mobile and embedded devices.
+\end{description}
+
+In the case of {\funkytt N0NaMe}, the performance characteristics above largely depend on the following 2 system parameters:
+
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Number of clique participants] \hfill \\
+        {\funkytt N0NaMe} is a peer-to-peer solution, so a key concern is its \emph{scalability} (\textit{i.e.} how its performance is affected as the number of communicating parties increases).
+    \item[Patching period] \hfill \\
+        As described in \cref{subsec:impl.proto.patch}, every {\funkytt N0NaMe} instance regularly emits a burst of patch requests. The time spacing between patches clearly affects the performance, and is therefore worth investigating.
+\end{description}
+
+
+
+
+Table \ref{tab:eval_frame} summarises the performance evaluation framework chosen as part of this project.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.77\textwidth}{l | l}
+\textbf{Input parameters} & \textbf{Performance Characteristics} \\  
+\hline
+\tabitem Number of clique members & \tabitem Messaging latency \\
+\tabitem Patching period & \tabitem Traffic consumption \\
+                    & \tabitem CPU usage \\
+                    & \tabitem Memory footprint \\
+\end{tabular*}
+\caption{\label{tab:eval_frame}Summary of the performance evaluation framework}
+\end{table}
+
+The effects of variations in the input parameters on the performance characteristics above, as well some key trade-offs, are presented in \cref{subsec:eval.perf.results}.
+
+\subsection{Testing automation}
+{\funkytt N0NaMe} is a complex distributed system which contains multiple sources of uncertainty, including but not limited to:
+\begin{itemize}
+    \item pseudo-random behaviour as part of the design (\cref{subsec:impl.proto.patch}, \cref{subsec:impl.proto.sealing}).
+    \item inherently unpredictable network conditions (\emph{long-range dependence})
+    \item random variations in server-side system load due to shared resources
+    \item uncertain behaviour of the JVM garbage collector
+\end{itemize}
+
+Given such an environment, making reasonably accurate estimates of the performance characteristics requires averaging over a large number of a repeated measurements. Whilst possible to do manually, these observations can be made much more comfortably and reliably by automating the evaluation process. \\
+
+This was achieved by writing Python scripts capable of launching multiple instances of {\funkytt N0NaMe} and manipulating them in different ways, meanwhile performing measurements of the relevant parameters. Building on the Machine Interface described in \cref{subsec:impl.proto.interface}, a simple Python class was written to permit full range of automated control of a {\funkytt N0NaMe} instance:
+
+\begin{lstlisting}[language = Python, columns=fullflexible, basicstyle=\scriptsize\ttfamily]
+class NonameInstance:
+
+    def __init__(self, userID=None, patch_period=3000):
+        '''Run a new N0NaMe instance with the given userID and patching period'''
+        if userID is None:
+            userID = ''.join(random.choice('0123456789abcdef') for i in range(10))
+
+        self.userID = userID
+        self.patch_period = patch_period
+        self.proc = subprocess.Popen(["java", "-jar", "../part2proj.jar", "-m", str(patch_period), 
+                                            userID], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    def __command(self, cmd):
+        '''Issue a command to the instance. Used by other methods in class.'''
+        self.proc.stdin.write((cmd + "\n").encode("UTF-8"))
+        self.proc.stdin.flush()
+        return self.proc.stdout.readline().decode("UTF-8").strip()
+
+    def groupList(self):
+        '''Returns the list of all groups this instance is a member of.'''
+        return re.split("\s+", self.__command("groups"))
+
+    def peerList(self):
+        '''Returns a list of all NoNaMe users currently online'''
+        return re.split("\s+", self.__command("peers"))
+
+    def isOnline(self):
+        '''Checks if this instance is online'''
+        raw = self.__command("status")
+        return (raw == "online")
+
+    def create(self, groupName):
+        '''Create a group with a given name'''
+        raw = self.__command("create %s" % (groupName))
+        return (raw == "ACK")
+
+    def memberList(self, groupName):
+        '''Returns a list of all members of a given group'''
+        return re.split("\s+",self.__command("members %s" % (groupName)))
+
+    def add(self, userID, groupName):
+        '''Adds a user to the specified group and blocks until user replies'''
+        raw = self.__command("add %s %s" % (userID, groupName))
+        if raw == "ACK":
+            # wait for DH to go through
+            while(userID not in self.memberList(groupName)):
+                sleep(0.3)
+            return True
+        else:
+            return False
+
+    def sendMessage(self, groupName, txt):
+        '''Sends a message to the specified group'''
+        raw = self.__command("msg %s %s" % (groupName, txt))
+        return (raw == "ACK")
+        
+    def getHistory(self, groupName):
+        '''Returns list if (author, message_text) tuples in chronological order'''
+        return json.loads(self.__command("history %s" % (groupName)))
+
+    def exit(self):
+        '''Shuts down the NoNaMe instance'''
+        raw = self.__command("exit")
+        return (raw == "ACK")
+\end{lstlisting}
+The class above launches an instance of {\funkytt N0NaMe} when it is constructed, and interacts with it via the standard streams (\texttt{stdin} and \texttt{stdout}). All the evaluation scripts rely on the \texttt{NonameInstance} class, and use to play out different operation scenarios (\textit{e.g.} form a clique with a given number of users and send messages in it).
+
+\subsection{Results and discussion}
+\label{subsec:eval.perf.results}
+This section presents the findings for each of the performance characteristics in \cref{subsec:eval.pef.frame}, and discusses some the identified trade-offs and patters.
+
+\subsubsection{Message latency}
+Theoretically, when one of the clique members authors a message, the time it takes to get delivered it to everyone in the clique (message latency $L$) can be modelled as:
+\begin{equation}
+    L = P + 2 \cdot T + Q
+    \label{eqn:latency}
+\end{equation}
+where:
+\begin{itemize}
+    \item $P$ -- time between message is authored and the \emph{last} patch request for it is sent
+    \item $T$ -- time it takes the patch request to reach the destination
+    \item $Q$ -- time the patch request is queueing at the destination, plus processing time
+\end{itemize}
+Figure \ref{fig:latency} shows each of these times on a timing diagram.
+
+\begin{figure}[H]
+    \captionsetup{width=1.0\textwidth}
+    \centering
+    \includegraphics[width=0.7\linewidth]{pics/eval/latency.png}
+    \caption{\label{fig:latency} Breakdown of the message latency.}
+\end{figure}
+
+To empirically find out how quickly messages are delivered (latency) in cliques of different sizes, a specialised evaluation script has been written. It starts by launching a \emph{leader instance} which creates a clique. Then, new {\funkytt N0NaMe} instances are created and added to the clique iteratively, thereby increasing the number of clique members ($N$). At each iteration (\textit{i.e.} for each value of $N$), the delay is measured --- a clique member, chosen uniformly at random, authors a message and the algorithm measures the time it takes for it to propagate to all other instances. For every $N$, the latency is estimated as the average of $5N$ such measurements (\textit{i.e.} every clique member authors roughly 5 messages). Figure \ref{fig:latency_vs_N} shows the results of this experiment.
+
+\begin{figure}[H]
+    \captionsetup{width=0.8\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{pics/eval/latency_vs_N_seal.png}
+    \caption{\label{fig:latency_vs_N} Messaging latency as a function of clique size, with patching every 3s. Authors chosen at random.}
+\end{figure}
+
+At the first glance, the results appear paradoxical and seem to disobey the previously suggested model. Messages take longer to propagate in a clique of size 2, than in clique of size 6! Upon some deliberation, however, the reason becomes obvious -- since we are choosing authors \emph{at random}, smaller cliques end up performing much more sealing than larger ones (sealable blocks occur more frequently). The abundance of sealing traffic results in patch requests waiting to be processed for longer ($Q$ in Equation \ref{eqn:latency} is larger) which means higher message latency. \\
+
+To confirm the validity of this hypothesis, the evaluation script was amended so as to completely eliminate sealing. As before, the clique was created and gradually expanded by the leader instance. However, for each clique size, only the newly added instance was now authoring messages, with the average of 30 measurements taken as representative of clique latency. Figure \ref{fig:latency_vs_N} presents the resulting pattern. \\
+
+\begin{figure}[h]
+    \captionsetup{width=0.7\textwidth}
+    \centering
+    \includegraphics[width=0.7\linewidth]{pics/eval/latency_vs_N.png}
+    \caption{\label{fig:latency_vs_N} Messaging latency as a function of clique size, with patching every 3s. No sealing happens.}
+\end{figure}
+
+The data suggests that the latency now increases linearly with the clique size, which is in line with the suggested latency model (Equation \ref{eqn:latency}). To understand why this is so, remember that our application handles all incoming traffic sequentially --- arriving messages form a queue, where the waiting time $Q$ is proportional to the long-term rate of incoming traffic (by Little's theorem \cite{little1961proof}). The latter grows linearly with clique size (as will be empirically shown in the next section), therefore so does the processing time $Q$ for a patch request and, consequently, message latency $L$. {\color{red} Is this clear?}\\
+
+From the previously described delay model (Equation \ref{eqn:latency}) it follows that latency also grows linerly with the \emph{patching period}. Figure \ref{fig:latency_vs_period} shows how this dependency looks in practice for different clique sizes, with sealing eliminated as before.
+
+\begin{figure}[H]
+    \captionsetup{width=0.7\textwidth}
+    \centering
+    \includegraphics[width=0.7\linewidth]{pics/eval/latency_vs_period.png}
+    \caption{\label{fig:latency_vs_period} Messaging latency as a function of patching period, for different clique sizes. No sealing happens.}
+\end{figure}
+
+The figure clearly suggests a linear pattern, with larger cliques having a higher ``DC offset'' due to message queueing. This exactly fits the predictions of the theoretical model (Equation \ref{eqn:latency}).
+
+
+\subsubsection{Traffic consumption}
+When estimating the amount of traffic consumed by the application, the following assumptions were made:
+\begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
+    \item[Symmetry] \hfill \\
+        It is assumed that, on average, {\funkytt N0NaMe} sends roughly as much traffic as it receives (uplink and downlink consumption is the same). Given the symmetry properties of both patching (\cref{subsec:impl.proto.patch}) and sealing (\cref{subsec:impl.proto.patch}), this assumption is deemed reasonably accurate.
+    \item[Zero-cost transport] \hfill \\
+        Size of transport headers (\textit{e.g.} HTTP headers) is negligible compared to the size of transmitted payload (\textit{i.e.} JSON representations of message classes). Not necessarily accurate for our Store-and-Forward-based implementation, but permits better estimate of intrinsic traffic consumption of KleeQ.
+\end{description}
+
+Based on these assumptions, the total traffic used up by a {\funkytt N0NaMe} instance can be estimated as the amount of data it \emph{receives} through the SaF (traffic sent will be approximately the same). To access this information the server-side Python code was slightly modified to record the number of bytes a user downloads every time they empty their ``postbox'', and the time of download. \\
+
+As one may logically expect, the \emph{total} traffic flowing in the system was found to be approximately quadratic in the size of clique (Figure \ref{fig:alltraf}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.9\textwidth}
+    \centering
+    \includegraphics[width=0.70\linewidth]{pics/eval/alltraf_vs_N.png}
+    \caption{\label{fig:alltraf} Total bandwidth usage as a function of clique size.}
+\end{figure}
+The result above was obtained by iteratively forming cliques of increasing size, and making randomly chosen clique members author messages every 3 to 6 seconds. For clique size $N$, the total system bandwidth usage was estimated as the average over time for a conversation of length $5N$ (\textit{i.e.} each member authors 5 messages on average). \\
+
+Since the experimental setup results in approximately symmetric operation of all instances, we can estimate the amount of traffic consumed by each \emph{individual} user just by dividing the total average consumption by the clique size (Figure \ref{fig:traf_vs_N}).
+
+\begin{figure}[H]
+    \captionsetup{width=0.9\textwidth}
+    \centering
+    \includegraphics[width=0.70\linewidth]{pics/eval/traf_vs_N.png}
+    \caption{\label{fig:traf_vs_N} Individual bandwidth usage as a function of clique size.}
+\end{figure}
+
+As can be seen, the bandwidth usage grows somewhat more slowly than linearly, with the difference being particularly apparent for larger clique sizes. This can be explained by the fact the the response times of the Store-and-Forward service get longer as the clique gets larger, thereby slowing down the transmission. \\
+
+It would be reasonable to hypothesise that traffic consumption is inversely proportional to the patching period (\textit{i.e.} directly proportional to patching frequency). Figure \ref{fig:traf_vs_period} shows the empirically obtained data.
+
+\begin{figure}[H]
+    \captionsetup{width=0.9\textwidth}
+    \centering
+    \includegraphics[width=0.70\linewidth]{pics/eval/traf_vs_period.png}
+    \caption{\label{fig:traf_vs_period} Personal traffic vs patching period.}
+\end{figure}
+
+The data above was obtained by recording the time-averaged traffic values for cliques of size 2 with different patching periods. The resulting pattern is in line with our inverse proportionality hypothesis.
+
+\subsubsection{CPU usage}
+CPU usage for different clique sizes and patching periods was measured using the \texttt{psutil} Python library which gives access to some statistical data regarding the running applications. To estimate average CPU load associated with running {\funkytt N0NaMe} for a given clique size and patching period, the evaluation script makes randomly chosen members author messages every 3 to 6 seconds, recording the percentage of CPU capacity used over 30 patching periods and calculating the average of these measurements in the end. Figure \ref{fig:cpu_vs_period} (in the next page) presents the resulting data. \\
+
+\begin{figure}[h]
+    \captionsetup{width=0.9\textwidth}
+    \centering
+    \includegraphics[width=0.78\linewidth]{pics/eval/cpu_vs_period.png}
+    \caption{\label{fig:cpu_vs_period} CPU usage as a function of patching period.}
+\end{figure}
+
+As with the traffic consumption, the data suggests that the CPU usage is inversely proportional to the patching period. As one would expect, participation in larger cliques requires more computing power.
+
+\subsubsection{Memory footprint}
+
+
+
+
+\subsubsection{Key trade-offs and trends}
+One of the key conclusions that can be drawn from the data above is trade-off between the performance of the system and the amount of resources required. \\
+
+For example, the system can achieve relatively low-latency communication by making the patching period small, but this has a cost in terms of high traffic consumption, memory requirements and CPU usage. Conversely, {\funkytt N0NaMe} can operate consuming very little traffic, memory and power, but this results in communication not being real-time any more (Figure \ref{}). 
+
+
+The best way to tackle this problem depends on the specific setting where the application is to be used and associated priorities. If low latency is crucial and resources are readily available (\textit{e.g.} instant messaging on desktop machines), it may be reasonable to accept the high costs and run the application with the short patching period. If, on the other hand, system requirements and energy consumption are serious concern and low latency is less important (\textit{e.g.} email on mobile devices), the patching period can be made high. Alternatively, an \emph{adaptive} approach can be used where the patching period is dynamically adjusted -- one can imagine this \emph{e.g.} in a mobile instant messenger which communicates with low delay when open, but switches to resource-saving mode when running in background.
+
+\begin{figure}[H]
+    \captionsetup{width=0.9\textwidth}
+    \centering
+    \includegraphics[width=0.78\linewidth]{pics/eval/cpu_vs_period.png}
+    \caption{\label{fig:cpu_vs_period} CPU usage as a function of patching period.}
+\end{figure}
+
+\section{Robustness}
+\label{sec:eval.robust}
+This section examines {\funkytt N0NaMe} from the viewpoint of stability and robustness. Of particular interest are issues of performance under high load and in the setting of transient connectivity.
+
+\subsection{High-load performance}
+Initially, the plan was to stress-test the protocol by constructing a clique of a large size out of instances with low patching period and making each of them author many messages per second. However, after carrying out the performance evaluation (\cref{sec:eval.perf}) it became clear that the main performance bottleneck in the system in the Store-and-Forward service. Indeed, playing out the aforementioned stress-test scenario would mostly test the Store-and-Forward, rather than the intrinsic performance limitations of the protocol design. This problem arises from the somewhat na{\"i}ve implementation and deployment of the server components. The Address Book and Store-and-Forward service are implemented as a single Python application which is deployed on the Flask's built-in development server platform, without any redundancy and load-balancing. Such a construction is acceptable for the purposes of building and running KleeQ, but cannot support high enough load to stress-test it. This problem could be partially fixed by implementing the Address Book and SaF as two separate applications and deploying them on a commercial-grade HTTP server platform (\textit{e.g.} Apache or NGINX). \\
+
+{\color{red} Local test?}
+
+%To obviate the necessity for brining the server performance up to an acceptable level, but still test how much load the protocol can handle, it was decided to perform the stress-testing \emph{locally}, so that instances listened on different ports on \texttt{localhost} and communicated over TCP.
+
+
+\subsection{Transient connectivity}
+As mentioned in \cref{subsec:impl.prep.transport}, the functionality for handling the cases when the application goes offline due to connectivity issues was implemented as part of the address-reporting thread, with the client considering itself offline when it is unable to reach the Address Book. When the client is offline, it does not attempt sending out patch requests. Given this setup, how quickly a client can ``catch up'' with the rest of the clique after they go offline depends on how frequently a connection to the Address Book is attempted. This is another example of the the previously mentioned trade-off between performance and resource requirements --- busy-waiting on the Address Book costs a lot of energy but allows to come back from network glitches quickly, whereas making infrequent attempts to reconnect saves resources but makes reconnection times longer. \\
+
+
+In practice connectivity issues often happen to be more complex than just absence of connection to the whole of Internet. Individual transmissions can be intercepted, delayed or lost, and it takes some careful planning to handle these situations. As noted before, {\funkytt N0NaMe} only uses reliable transport protocols (TCP and HTTP), but the Store-and-Forward cannot be considered reliable (\textit{e.g.} it can reboot or be accessed by a malicious adversary), so it is worth analysing different parts of our implementation for resilience to unreliable transport. The implementation of both patching (\cref{subsec:impl.proto.patch}) and sealing (\cref{subsec:impl.proto.sealing}) contains a time-out and re-transmission mechanism that makes them insensitive to loss of communications. The implementation of the clique formation scheme, however, does not re-transmit lost messages, meaning that network instability can result in disruption of the clique formation process. This problem has not been fixed as part of this project due to time constraints, but it would be useful to do it in the future.
+
+\section{Usability}
+\label{sec:eval.usability}
+One of the reasons why {\funkytt N0NaMe} was given a graphical interface (GUI) was the aspiration to make it easy to use. To find out whether this goal was achieved the usability of the GUI was compared with that of the command-line interface (CLI) using the Keystroke-level Model (KLM) --- one of the key analytic summative evaluation techniques in the field of Human-Computer Interaction. \\
+
+In brief, KLM is a way to estimate how much time an average user needs to perform a routine tasks when using a given interface. This is done by encoding each of the actions that are needed to complete a task as one of the standard \emph{operators}. Each operator in the model has a fixed time cost (Table \ref{tab:KLM}), and total time to complete a task can be estimated as the sum of costs of its constituent operators.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.79\linewidth}{c | l | l}
+Operator & Description & Time cost (sec) \\
+\hline
+K & keystroke or button press & $\approx 0.28$ \footnote{estimate for ``average non-secretary typist''} \\
+P & pointing at something with a mouse & 1.1 \\
+H & homing hands on keyboard or mouse & 0.4 \\
+M & mentally preparing for action & 1.35 \\
+DD & choice in drop-down menu & 3.05 \\
+\end{tabular*}
+\caption{\label{tab:KLM} KLM operators and associated time costs \cite{card1980keystroke}\cite{sauro2009estimating}.}
+\end{table}
+
+As an example, typing the command \texttt{add pavel supergroup} and hitting Enter can be encoded as the sequence of operators M, H, 4K, 5K, K, 10K, K or just M, H, 20K, and therefore has the cost $1.35 + 0.4 + 20 \cdot 0.28 = 7.35$ seconds. \\
+
+
+The standard tasks that one may want to perform using the system correspond to each of the CLI commands, described in \cref{subsec:impl.prep.CLI}. Table \ref{tab:KLM_encode} shows how these tasks can be encoded as KLM operators in CLI and GUI.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{1.0\linewidth}{l | c | c}
+        & CLI operators & GUI operators \\
+\hline
+Create a clique & M, H, 6K,  $|C|\cdot$K, K & M, H, P, H,  $|C|\cdot$K, K\\
+Add user to clique & M, H, 4K, $|U|\cdot$K, K, $|C|\cdot$K, K & M, H, 3P, H, K \\
+View history in clique & M, H, 5K, $|C|\cdot$K, K & M, H, P \\
+Sends text message & M, H, 4K, $|M|\cdot$K, K & M, H, $|M|\cdot$K, K \\
+Exit {\funkytt N0NaMe} & M, H, 5K & M, H, P \\
+\end{tabular*}
+\caption{\label{tab:KLM_encode} Task encodings in KLM.}
+\end{table}
+
+where $|C|$, $|U|$ and $|M|$ are length of clique name, user name and message respectively.
+
+
+Table \ref{tab:KLM_costs} shows the resulting costs for each task for the two interfaces.
+\begin{table}[H]
+\centering
+\begin{tabular*}{0.9\linewidth}{l | c | c}
+        & CLI time cost (sec) & GUI time cost (sec) \\
+\hline
+Create a clique & 3.71 + $|C|\cdot$K & 3.53 + $|C|\cdot$K\\
+Add user to clique & 3.43 + $(|U| + |C|)\cdot$K & 5.73 \\
+View history in clique & 3.43 + $|C|\cdot$K & 2.85 \\
+Sends text message & 3.15 + $|M|\cdot$K & 2.03 + $|M|\cdot$K \\
+Exit {\funkytt N0NaMe} & 3.15 & 2.75 \\
+\end{tabular*}
+\caption{\label{tab:KLM_costs} Costs of tasks in {\funkytt N0NaMe}.}
+\end{table}
+From the data above it is easy to see that, on average, the GUI helps perform each of the tasks faster as compared to the CLI. It is important to remember, however, that KLM estimates are only valid for \emph{expert} users and do not give any indication of how long it takes to become one (no account of learning time). Moreover, KLM estimates are based on error-free execution of action sequences which often cannot be a valid assumption. Nevertheless, it would be reasonable to assume that the CLI takes longer to learn and easier to make mistakes in, so it can be tentatively concluded that the GUI achieves the goal of making {\funkytt N0NaMe} more usable.
+
+\section{Security}
+\label{sec:eval.security}
+
+\subsection{Security properties}
+
+
+\subsection{Limitations}
+
+\section{Satisfaction of requirements}
+\label{sec:eval.req}
+
+\section{Summary}
 
 
 \chapter{Conclusions}

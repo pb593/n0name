@@ -1,11 +1,10 @@
 #!/usr/local/bin/python3
 import numpy as np
-import os
+import random
 from time import sleep, time
 from NonameInstance import NonameInstance
 
-N = 30
-M = 3
+N = 10
 groupName = "grp"
 
 
@@ -17,11 +16,9 @@ if __name__ == "__main__":
 
     instances = list()
 
-    os.chdir("prop_delay")
+    f = open("results/prop_delay_vs_N(3000)_no_seal.txt", "w")
 
-    f = open("results/prop_delay_vs_N(4).txt", "w")
-
-    leaderInst = NonameInstance()
+    leaderInst = NonameInstance(patch_period=3000)
     instances.append(leaderInst)
 
     print("Created leader instance with name %s" % leaderInst.userID)
@@ -33,31 +30,31 @@ if __name__ == "__main__":
     for i in range(1, N):
         print("N = %d" % (i + 1))
 
-        newInst = NonameInstance()
+        newInst = NonameInstance(patch_period=3000)
         instances.append(newInst)
 
         print("\tCreated a new instance with name %s" % newInst.userID)
 
-        sleep(7)  # make sure everyone gets the new guy in their address books
+        sleep(5)  # make sure everyone gets the new guy in their address books
 
         # leader adds the new guy
         leaderInst.add(newInst.userID, groupName)
-        sleep(2)  # make sure all DH noise is gone
+        sleep(5)  # make sure all DH noise is gone
         print("\tLeader instance has successfully added the newcomer to the group")
 
-        # new guy sends out messages, to see how long they propagate
         results = list()
+        M = 5*(i+1)
         print("\tNewcomer sends %d messages, to estimate how long they propagate." % M)
         for j in range(M):
-            txt = str("Hello, %s is here! (%d)" % (newInst.userID, j))
+            txt = str("Hello, %s is here! (%d,%d)" % (newInst.userID, i, j))
             newInst.sendMessage(groupName, txt)
             t0 = millis()
 
-            haventReceived = set(map(lambda x: x.userID, instances))
+            haventReceived = set([x.userID for x in instances])
             while (haventReceived):
                 for inst in instances:
                     hist = inst.getHistory(groupName)
-                    l = list(map(lambda d: (d["author"], d["text"]), hist))
+                    l = [(d["author"], d["text"]) for d in hist]
                     if (newInst.userID, txt) in l:
                         haventReceived.discard(inst.userID)
                 sleep(0.05)

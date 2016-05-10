@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class StoreAndForward {
 
-    public static final Integer SAF_REFRESH_RATE = 500; // period of checking store-n-forward for new messages (ms)
+    public static final Integer SAF_REFRESH_RATE = 1000; // period of checking store-n-forward for new messages (ms)
 
     private static final String servUrl = "http://pberkovich1994.pythonanywhere.com/saf/";
 

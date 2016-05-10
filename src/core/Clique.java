@@ -75,25 +75,28 @@ public class Clique extends Thread {
 
         // various time parameters of the patching algo (in seconds)
         // TODO: might need to tweak the delays later
-        final int PATCH_REQUEST_TIMEOUT = (int) (3.0 / Utils.PATCH_FREQ); // triple the average patching period (s)
+        final int PATCH_REQUEST_TIMEOUT = 3 * Utils.PATCH_PERIOD; // triple the average patching period (s)
+        final int PATCH_PERIOD_VARIATION = (int) (20 * Math.sqrt(Utils.PATCH_PERIOD)); // it is a good fit
 
         Random rn = new Random();
         while(true) {
 
-            int delay = (int) (Utils.expRandom(Utils.PATCH_FREQ) * 1000); // exponential inter-burst times (ms)
+            int delay = (Utils.PATCH_PERIOD - PATCH_PERIOD_VARIATION / 2) +
+                                        rn.nextInt(PATCH_PERIOD_VARIATION); // generate a random sleep
 
             Utils.sleep(delay); // inter-burst sleep
 
             // clean up expired patch requests from pendingPatchRequests
             for (Iterator<Map.Entry<String, Long>> it = pendingPatchRequests.entrySet().iterator(); it.hasNext(); ){
                 Map.Entry<String, Long> entry = it.next();
-                if (System.currentTimeMillis() - entry.getValue() > PATCH_REQUEST_TIMEOUT * 1000) { // if expired
+                if (System.currentTimeMillis() - entry.getValue() > PATCH_REQUEST_TIMEOUT) { // if expired
                     it.remove(); // delete
                 }
             }
 
             // issue a randomly spaced burst of patch requests
-            double INTRA_BURST_FREQ = 3.0 * members.size() * Utils.PATCH_FREQ; // frequency of emission inside a burst
+            int INTRA_BURST_PERIOD = Utils.PATCH_PERIOD / (members.size() * 4);
+                                                                            // spacing of emissions inside a burst
             for(String userID: members.keySet()) {
                 if (!userID.equals(this.client.getUserID()) && !pendingPatchRequests.containsKey(userID)) {
                     UpdateRequestMessage urm = new UpdateRequestMessage(history.getVectorClk(),
@@ -101,7 +104,7 @@ public class Clique extends Thread {
                     String toTransmit = encryptAndMac(urm);
                     comm.send(userID, toTransmit);
                     pendingPatchRequests.put(userID, System.currentTimeMillis());
-                    Utils.sleep((int)(Utils.expRandom(INTRA_BURST_FREQ) * 1000)); // sleep 0 to 500 ms
+                    Utils.sleep(rn.nextInt(INTRA_BURST_PERIOD)); // sleep 0 to 500 ms
                 }
             }
 
