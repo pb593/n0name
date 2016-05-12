@@ -1,4 +1,18 @@
-\documentclass[a4paper, 12pt]{report}
+\documentclass[a4paper, twoside, 12pt]{report}
+
+
+%% Page setup
+\usepackage[a4paper, twoside]{geometry}
+\geometry{tmargin=3cm,bmargin=3cm,lmargin=2.5cm,rmargin=2.5cm,headheight=3cm,headsep=0.5cm,footskip=1.5cm}
+
+\usepackage[unicode=true,
+ bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=1,
+ breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=false]{hyperref}
+
+\hypersetup{pdftitle={N0NaMe: Peer-to-peer conversation security using KleeQ -- CST Part II dissertation}, pdfauthor={P Berkovich}}
+
+\addtolength{\oddsidemargin}{6mm}
+\addtolength{\evensidemargin}{-8mm}
 
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
@@ -7,8 +21,8 @@
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{array}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{hyperref}
+%\usepackage[margin=2.5cm]{geometry}
+%\usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{float}
 \usepackage{amsmath}
@@ -71,10 +85,15 @@
 
 \newcommand{\skippage}{\newpage\null\newpage}
 
+% tick mark
+\usepackage{tikz}
+\def\checkmark{\tikz\fill[scale=0.4](0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;} 
+
 \newcommand*{\titleTH}{ % title page
 \begingroup
 \raggedleft
 \thispagestyle{empty}
+\newgeometry{margin=2.5cm}
 {\Large Pavel Berkovich}\\[0.167\textheight] \centering
 {\huge{\funkytt N0NaMe\_}}\\[\baselineskip]
 {\Large Peer-to-peer conversation security \\ using KleeQ} \\
@@ -97,6 +116,10 @@
 \begin{document}
 
 \titleTH
+
+\raggedbottom
+
+\skippage
 
 \pagenumbering{roman} % Roman page numbering
 
@@ -122,6 +145,8 @@ Each of the project's aims has been successfully achieved. Despite it taking mor
 Re-write with more specific results (with numbers etc) after do eval???}
 
 \pagebreak
+\skippage
+
 \section*{Declaration of Originality}
 I, Pavel Berkovich of St John's College, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. \\[0.8cm]
 \begin{tabular}{l}
@@ -129,6 +154,8 @@ I, Pavel Berkovich of St John's College, being a candidate for Part II of the Co
     Date
 \end{tabular}
 \vfill
+
+\skippage
 
 \tableofcontents
 
@@ -150,13 +177,13 @@ Discussing secure messaging in more detail and comparing different solutions req
 
 \begin{description}[labelindent=0.5cm, leftmargin=1.3cm, rightmargin=0.5cm]
     \item[Problem 1: Trust Establishment]\hfill \\
-        How do we know that our peers are who they say they are? How do we make sure that they are not being impersonated by a malicious adversary?
+        How do we know that our peers are who they say they are? How do we make sure that they are \emph{not being impersonated} by a malicious adversary?
     \item[Problem 2: Conversation Security]\hfill \\
         Once we are sure that we are talking to the right parties, how do we protect the security and privacy of the \emph{conversation's content}? In other words, how do we encrypt the messages, what data do we attach to them, and what security protocols do we perform?
     \item[Problem 3: Transport Privacy]\hfill \\
         Once we have secured the content of our messages, how do we actually \emph{send} them so as to \emph{hide their metadata} (\textit{e.g.} sender identity, recipient identity, conversation to which the message belongs etc)?
 \end{description}
-The area of focus for this project is \emph{conversation security} (Problem 2 above).
+Security is a comprehensive concept, and therefore building a truly secure messaging application requires solving all of these problems. Due to time constraints this project will focus only on \emph{conversation security} (Problem 2 above).
 
 \section{Aims of the project}
 \label{sec:intro.aims}
@@ -227,6 +254,8 @@ The authors of KleeQ (Reardon \textit{et al.}, \cite{reardon2007kleeq}) omitted 
 
 \section{Summary}
 This chapter has shown where this project fits in the field of secure messaging, and described the objectives it expects to meet. The specifics of how these objectives are addressed are described in the following chapters.
+
+\skippage
 
 \chapter{Preparation}
 \label{ch:prep}
@@ -463,7 +492,7 @@ The requirements for the project follow directly from the aims outlined in \cref
 
 
     \item[Constructing a useable messaging application] \hfill \\
-        Build a simple messaging application based in our protocol implementation.    
+        Build a simple messaging application based on our protocol implementation.    
 \end{description}
 \vspace{2pt}
 It is worth pointing out that these two items are mutually dependent --- implementing and debugging the protocol requires some kind of messenger prototype to be in place. This circumstance was identified early on and taken into account when planning the work (\cref{sec:prep.impl_strat}). \\
@@ -545,17 +574,14 @@ Implementing KleeQ itself required a more flexible approach and the \emph{iterat
 
 \section{Technical choices}
 \label{sec:choices}
-The technology and libraries were carefully chosen so as to make the development process more smooth, as well as to allow for some flexibility and modularity.
+Server-based components were implemented in Python, using the PyCharm IDE. For the purpose of running the code, a cloud server was rented from the PaaS provider PythonAnywhere\footnote{\url{https://www.pythonanywhere.com/}}. As noted before, most of the server-side development needed to be done before writing any client code, so the testing was performed manually, using a simple utility called Postman\footnote{\url{https://www.getpostman.com/}} which allows sending custom HTTP requests and receiving responses. \\
 
-\subsection{Server side}
-Server-based components were implemented in Python, using the RESTful HTTP framework called Flask\footnote{\url{http://flask.pocoo.org}}. For the purpose of running the code, a cloud server was rented from the PaaS provider PythonAnywhere\footnote{\url{https://www.pythonanywhere.com/}}. As noted before, most of the server-side development needed to be done before writing any client code, so the testing was performed manually, using a simple utility called Postman\footnote{\url{https://www.getpostman.com/}} which allows sending custom HTTP requests and receiving responses. Programming in Python was done in PyCharm IDE.
+The client-side code was written in Java, using the IntelliJ IDE. Messages were serialised into JSON strings using the \texttt{json.simple}\footnote{\url{https://github.com/fangyidong/json-simple}} library. The graphical interface was built using the Swing framework. \\ 
 
-\subsection{Client side}
-The client-side code was written in Java, using the IntelliJ IDE. Messages were serialised into JSON strings using the json.simple\footnote{\url{https://github.com/fangyidong/json-simple}} library. The graphical interface was built using the Swing framework. The project relied on \texttt{git} for VCS, and the back-up strategy involved regular uploads to GitHub and copying to an external hard drive.
+The project relied on \texttt{git} for SCM, and the back-up strategy involved regular uploads to GitHub and copying to an external hard drive.
 
 \section{Summary}
 This chapter has described the KleeQ protocol in full detail (\cref{sec:prep.proto}), presented the formal requirements for this project (\cref{sec:prep.proto}), familiarised the reader with the early design work (\cref{sec:prep.design}) and the planning (\cref{sec:prep.impl_strat}) that was performed before any code was written. The next chapter provides further detail of design and elaborates on some interesting aspects of the implementation.
-
 
 
 \chapter{Implementation}
@@ -576,7 +602,7 @@ The next few sections describe in detail how these tasks were performed.
 \label{subsec:impl.prep.server}
 This part of the work was regarded as a necessary diversion from the original goal of implementing and evaluating KleeQ, and therefore the design decisions were directed towards simplicity and quickness of implementation. Both server components are small HTTP services --- the choice of protocol has been motivated by a good selection of third-party libraries for HTTP communication and the fact that it is not usually blocked by firewalls.\\
 
-The Address Book and the Store-and-Forward (SaF) service were implemented using Flask, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
+The Address Book and the Store-and-Forward (SaF) service were implemented using Flask\footnote{\url{http://flask.pocoo.org}}, a RESTful Python framework for building HTTP server applications. Essentially, it provides an easy and efficient way to write server code which accepts and replies to HTTP requests. Here is a quick example of how it works: \\
 
 \begin{lstlisting}[language = Python, columns=fullflexible]
 from flask import Flask
@@ -676,7 +702,7 @@ The design involved defining a minimal set of operations that a group messaging 
 
 \begin{table}[H]
 \centering
-\begin{tabular*}{0.9\textwidth}{l | l | l}
+\begin{tabular*}{0.9\textwidth}{l | c | l}
     Command & Arguments & Function \\
     \hline
     \multicolumn{3}{c}{\textbf{Main menu commands}} \\
@@ -900,7 +926,7 @@ Figures \ref{fig:sealing_simult} and \ref{fig:sealing_lag} illustrate each of th
     \includegraphics[width=0.6\linewidth]{pics/sealing_simult.png}
     \caption{\label{fig:sealing_simult} Case 1. Alice and Bob find the block almost simultaneously.}
 \end{figure}
-Figure \ref{fig:sealing_simult} shows the case where participants discover ({\color{blue}blue} point in figure) a block almost at the same time and signal each other. For each signalled hash, every participant keeps track of $R$ --- subset of clique members whose signals for the corresponding blocks have not yet been received. When the set $R$ becomes empty, the block is sealed ({\color{deepgreen}green} point in figure).
+Figure \ref{fig:sealing_simult} shows the case where participants discover ({\color{blue}blue} circle in figure) a block almost at the same time and signal each other. For each signalled hash, every participant keeps track of $R$ --- subset of clique members whose signals for the corresponding blocks have not yet been received. When the set $R$ becomes empty, the block is sealed ({\color{deepgreen}green} circle in figure).
 
 
 \begin{figure}[H]
@@ -913,7 +939,7 @@ Figure \ref{fig:sealing_simult} shows the case where participants discover ({\co
 Figure \ref{fig:sealing_lag} shows what happens when the participants find a block at significantly different times. Alice receives a signal for a block she has not discovered yet, but her actions are effectively same as before --- she keeps a set of users who still have not found the block \emph{which includes herself}. When she finds the block, she signals this and then considers it sealed. \\
 
 
-As can be seen, in both cases 2 messages are sufficient to seal a block, which is much better than what we would get if we were to use the straightforward request-response solution. {\color{red} Is it clear what I mean???}. For a general clique of size $n$, the message count is $2(n-1)$. \\
+As can be seen, in both cases 2 messages are sufficient to seal a block, which is much better than what we would get from the straightforward solution where hashes are verified by each user in a request-response way. For a general clique of size $n$, the message count is $n (n-1)$. \\
 
 The scheme described above is sufficient under the assumption of \emph{reliable transport} which may be valid as part of this project (both TCP and HTTP are reliable) but not generally. For completeness, the cases when messages get lost or intercepted have also been handled. It is in fact quite straightforward --- if someone's signal gets lost, they are reminded about it by those who failed to receive it. An example of this is shown in Figure \ref{fig:sealing_lost}.
 
@@ -1045,7 +1071,7 @@ A GUI was built to assess the usability implications of using KleeQ, as well as 
 \begin{figure}[H]
     \captionsetup{width=0.84\textwidth}
     \centering
-    \includegraphics[width=0.94\linewidth]{pics/GUI.png}
+    \includegraphics[width=0.98\linewidth]{pics/GUI.png}
     \caption{\label{fig:GUI} Interface layout and functionality.}
 \end{figure}
 Most modern messengers seem to have relatively similar interface layouts, so there seems to be certain consensus in the field regarding what can be considered intuitive. Our GUI was designed to be similar to that of other messaging applications (\textit{e.g.} Viber, Telegram), to make sure it is familiar to anyone who has ever used messengers before. \\
@@ -1080,7 +1106,7 @@ In brief, the constructor of the class instantiates JFrame and adds callbacks to
 In this chapter, the reader was familiarised with how {\funkytt N0NaMe} was taken from a conceptual description to a concrete implementation. In particular, in \cref{sec:impl.prep} we looked at the auxiliary ``scaffolding'' components that were constructed before the core protocol, and then (in \cref{sec:impl.proto}) went over the series incremental steps taken to implement KleeQ itself. At this stage, some steps were taken to simplify the process of evaluation, whose details and findings are presented in the next chapter.
 
 \chapter{Evaluation}
-This chapter presents the results of systematic summative evaluation of the constructed system. More specifically, here we analyse its performance characteristics (\cref{sec:eval.perf}), consider how robust the system is (\cref{sec:eval.robust}), assess its usability properties (\cref{sec:eval.usability}) and look at what level of security it guarantees (\cref{sec:eval.security}). Based on these results, we then determine whether the initial project requirements have been satisfied (\cref{sec:eval.req}).
+This chapter presents the results of systematic summative evaluation of the constructed system. More specifically, it analyses its performance characteristics (\cref{sec:eval.perf}), considers how robust the system is (\cref{sec:eval.robust}), assesses its usability properties (\cref{sec:eval.usability}) and evaluates its security properties (\cref{sec:eval.security}). Based on these results, we then determine whether the initial project requirements have been satisfied (\cref{sec:eval.req}).
 
 
 \section{Performance}
@@ -1088,7 +1114,7 @@ This chapter presents the results of systematic summative evaluation of the cons
 \subsection{Evaluation framework}
 \label{subsec:eval.pef.frame}
 Discussing performance of a system requires a systematic evaluation framework. 
-In particular, it is necessary to decide which \emph{performance characteristics} are of interest, and then determine a set of \emph{input parameters} whose variations can affect one of the relevant performance characteristics. \\
+In particular, it is necessary to decide which \emph{performance characteristics} are of interest, and then determine a set of \emph{input parameters} whose variations can affect them. \\
 
 
 In the case of messaging applications, the key performance characteristics include:
@@ -1096,11 +1122,11 @@ In the case of messaging applications, the key performance characteristics inclu
     \item[Messaging latency] \hfill \\
         How long it takes for a new message to reach all clique members. The significance of this parameter varies with the type of communication (\textit{e.g.} not very important for email, but very significant for instant messaging).
     \item[Traffic consumption] \hfill \\
-        How much traffic (uplink and downlink) is generated by the application per unit time, on average. This characteristic can have an impact on broadband bills and energy consumption, both of which are of particular relevance in the case of mobile communication.
+        How much traffic (uplink and downlink) is generated by the application per unit time, on average. This characteristic can have an impact on broadband bills and energy consumption, both of which are of particular relevance to mobile devices.
     \item[CPU usage] \hfill \\
         How much CPU resources, on average, the application needs. This metric is interesting on its own, but can also be used as a proxy for energy consumption.
     \item[Memory footprint] \hfill \\
-        How much memory space, on average, the application takes up. Just as CPU usage, this property is important from the multitasking viewpoint, and is of particular significance in mobile and embedded devices.
+        How much RAM, on average, the application takes up. Just as CPU usage, this property is important from the multitasking viewpoint, and is of particular significance in mobile and embedded devices.
 \end{description}
 
 In the case of {\funkytt N0NaMe}, the performance characteristics above largely depend on the following 2 system parameters:
@@ -1141,7 +1167,7 @@ The effects of variations in the input parameters on the performance characteris
     \item uncertain behaviour of the JVM garbage collector
 \end{itemize}
 
-Given such an environment, making reasonably accurate estimates of the performance characteristics requires averaging over a large number of a repeated measurements. Whilst possible to do manually, these observations can be made much more comfortably and reliably by automating the evaluation process. \\
+Given such an environment, making reasonably accurate estimates of the performance characteristics requires averaging over a large number of repeated measurements. Whilst possible to do manually, these observations can be made much more comfortably and reliably by automated means. \\
 
 This was achieved by writing Python scripts capable of launching multiple instances of {\funkytt N0NaMe} and manipulating them in different ways, meanwhile performing measurements of the relevant parameters. Building on the Machine Interface described in \cref{subsec:impl.proto.interface}, a simple Python class was written to permit full range of automated control of a {\funkytt N0NaMe} instance:
 
@@ -1211,7 +1237,7 @@ class NonameInstance:
         raw = self.__command("exit")
         return (raw == "ACK")
 \end{lstlisting}
-The class above launches an instance of {\funkytt N0NaMe} when it is constructed, and interacts with it via the standard streams (\texttt{stdin} and \texttt{stdout}). All the evaluation scripts rely on the \texttt{NonameInstance} class, and use to play out different operation scenarios (\textit{e.g.} form a clique with a given number of users and send messages in it).
+The class above launches an instance of {\funkytt N0NaMe} when it is constructed, and interacts with it via the standard streams (\texttt{stdin} and \texttt{stdout}). The evaluation scripts use the \texttt{NonameInstance} class to play out different usage scenarios and measure the performance characteristics of interest.
 
 \subsection{Results and discussion}
 \label{subsec:eval.perf.results}
@@ -1234,7 +1260,7 @@ Figure \ref{fig:latency} shows each of these times on a timing diagram.
 \begin{figure}[H]
     \captionsetup{width=1.0\textwidth}
     \centering
-    \includegraphics[width=0.7\linewidth]{pics/eval/latency.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/latency.png}
     \caption{\label{fig:latency} Breakdown of the message latency.}
 \end{figure}
 
@@ -1243,29 +1269,29 @@ To empirically find out how quickly messages are delivered (latency) in cliques 
 \begin{figure}[H]
     \captionsetup{width=0.8\textwidth}
     \centering
-    \includegraphics[width=0.8\linewidth]{pics/eval/latency_vs_N_seal.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/latency_vs_N_seal.png}
     \caption{\label{fig:latency_vs_N} Messaging latency as a function of clique size, with patching every 3s. Authors chosen at random.}
 \end{figure}
 
 At the first glance, the results appear paradoxical and seem to disobey the previously suggested model. Messages take longer to propagate in a clique of size 2, than in clique of size 6! Upon some deliberation, however, the reason becomes obvious -- since we are choosing authors \emph{at random}, smaller cliques end up performing much more sealing than larger ones (sealable blocks occur more frequently). The abundance of sealing traffic results in patch requests waiting to be processed for longer ($Q$ in Equation \ref{eqn:latency} is larger) which means higher message latency. \\
 
-To confirm the validity of this hypothesis, the evaluation script was amended so as to completely eliminate sealing. As before, the clique was created and gradually expanded by the leader instance. However, for each clique size, only the newly added instance was now authoring messages, with the average of 30 measurements taken as representative of clique latency. Figure \ref{fig:latency_vs_N} presents the resulting pattern. \\
-
-\begin{figure}[h]
-    \captionsetup{width=0.7\textwidth}
-    \centering
-    \includegraphics[width=0.7\linewidth]{pics/eval/latency_vs_N.png}
-    \caption{\label{fig:latency_vs_N} Messaging latency as a function of clique size, with patching every 3s. No sealing happens.}
-\end{figure}
-
-The data suggests that the latency now increases linearly with the clique size, which is in line with the suggested latency model (Equation \ref{eqn:latency}). To understand why this is so, remember that our application handles all incoming traffic sequentially --- arriving messages form a queue, where the waiting time $Q$ is proportional to the long-term rate of incoming traffic (by Little's theorem \cite{little1961proof}). The latter grows linearly with clique size (as will be empirically shown in the next section), therefore so does the processing time $Q$ for a patch request and, consequently, message latency $L$. {\color{red} Is this clear?}\\
-
-From the previously described delay model (Equation \ref{eqn:latency}) it follows that latency also grows linerly with the \emph{patching period}. Figure \ref{fig:latency_vs_period} shows how this dependency looks in practice for different clique sizes, with sealing eliminated as before.
+To confirm the validity of this hypothesis, the evaluation script was amended so as to completely eliminate sealing. As before, the clique was created and gradually expanded by the leader instance. However, for each clique size, only the newly added instance was now authoring messages, with the average of 30 delay measurements taken as representative of clique latency. Figure \ref{fig:latency_vs_N} presents the resulting pattern. \\
 
 \begin{figure}[H]
     \captionsetup{width=0.7\textwidth}
     \centering
-    \includegraphics[width=0.7\linewidth]{pics/eval/latency_vs_period.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/latency_vs_N.png}
+    \caption{\label{fig:latency_vs_N} Messaging latency as a function of clique size, with patching every 3s. No sealing happens.}
+\end{figure}
+
+The data suggests that the latency now increases linearly with the clique size, which is in line with the suggested latency model (Equation \ref{eqn:latency}). To understand why this is so, remember that our application handles all incoming traffic sequentially --- arriving messages form a queue, where the waiting time $Q$ is proportional to the long-term rate of incoming traffic (by Little's theorem \cite{little1961proof}). The latter grows linearly with clique size (as will be empirically shown in the next section), therefore so does the processing time $Q$ for a patch request and, consequently, message latency $L$. \\
+
+From the previously described delay model (Equation \ref{eqn:latency}) it follows that latency also grows linearly with the \emph{patching period}. Figure \ref{fig:latency_vs_period} shows how this dependency looks in practice for different clique sizes, with sealing eliminated as before.
+
+\begin{figure}[H]
+    \captionsetup{width=0.7\textwidth}
+    \centering
+    \includegraphics[width=0.65\linewidth]{pics/eval/latency_vs_period.png}
     \caption{\label{fig:latency_vs_period} Messaging latency as a function of patching period, for different clique sizes. No sealing happens.}
 \end{figure}
 
@@ -1288,17 +1314,17 @@ As one may logically expect, the \emph{total} traffic flowing in the system was 
 \begin{figure}[H]
     \captionsetup{width=0.9\textwidth}
     \centering
-    \includegraphics[width=0.70\linewidth]{pics/eval/alltraf_vs_N.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/alltraf_vs_N.png}
     \caption{\label{fig:alltraf} Total bandwidth usage as a function of clique size.}
 \end{figure}
-The result above was obtained by iteratively forming cliques of increasing size, and making randomly chosen clique members author messages every 3 to 6 seconds. For clique size $N$, the total system bandwidth usage was estimated as the average over time for a conversation of length $5N$ (\textit{i.e.} each member authors 5 messages on average). \\
+The result above was obtained by iteratively forming cliques of increasing size, and making randomly chosen clique members author messages every 3 to 6 seconds. For a clique of size $N$, the total system bandwidth usage was estimated as the average over time for a conversation of length $5N$ (\textit{i.e.} each member authors 5 messages on average). \\
 
 Since the experimental setup results in approximately symmetric operation of all instances, we can estimate the amount of traffic consumed by each \emph{individual} user just by dividing the total average consumption by the clique size (Figure \ref{fig:traf_vs_N}).
 
 \begin{figure}[H]
     \captionsetup{width=0.9\textwidth}
     \centering
-    \includegraphics[width=0.70\linewidth]{pics/eval/traf_vs_N.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/traf_vs_N.png}
     \caption{\label{fig:traf_vs_N} Individual bandwidth usage as a function of clique size.}
 \end{figure}
 
@@ -1309,25 +1335,33 @@ It would be reasonable to hypothesise that traffic consumption is inversely prop
 \begin{figure}[H]
     \captionsetup{width=0.9\textwidth}
     \centering
-    \includegraphics[width=0.70\linewidth]{pics/eval/traf_vs_period.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/traf_vs_period.png}
     \caption{\label{fig:traf_vs_period} Personal traffic vs patching period.}
 \end{figure}
 
 The data above was obtained by recording the time-averaged traffic values for cliques of size 2 with different patching periods. The resulting pattern is in line with our inverse proportionality hypothesis.
 
 \subsubsection{CPU usage}
-CPU usage for different clique sizes and patching periods was measured using the \texttt{psutil} Python library which gives access to some statistical data regarding the running applications. To estimate average CPU load associated with running {\funkytt N0NaMe} for a given clique size and patching period, the evaluation script makes randomly chosen members author messages every 3 to 6 seconds, recording the percentage of CPU capacity used over 30 patching periods and calculating the average of these measurements in the end. Figure \ref{fig:cpu_vs_period} (in the next page) presents the resulting data. \\
+CPU usage for different clique sizes and patching periods was measured using the \texttt{psutil}\footnote{https://pythonhosted.org/psutil/} Python library which gives access to some statistics about running processes. To estimate average CPU load associated with running {\funkytt N0NaMe} for a given clique size and patching period, the evaluation script makes randomly chosen members author messages every 3 to 6 seconds, recording the percentage of CPU capacity used over 30 patching periods and calculating the average of these measurements in the end. Figure \ref{fig:cpu_vs_period} presents the resulting data. \\
 
-\begin{figure}[h]
+\begin{figure}[H]
     \captionsetup{width=0.9\textwidth}
     \centering
-    \includegraphics[width=0.78\linewidth]{pics/eval/cpu_vs_period.png}
+    \includegraphics[width=0.65\linewidth]{pics/eval/cpu_vs_period.png}
     \caption{\label{fig:cpu_vs_period} CPU usage as a function of patching period.}
 \end{figure}
 
 As with the traffic consumption, the data suggests that the CPU usage is inversely proportional to the patching period. As one would expect, participation in larger cliques requires more computing power.
 
 \subsubsection{Memory footprint}
+Overall, the amount of memory required by {\funkytt N0NaMe} has been found to greatly vary depending on the JVM heap parameters and garbage collection policies (\texttt{-Xmx} and \texttt{Xms} JVM options). Table \ref{} gives some indicative ranges that have been obtained by tweaking these parameters, for different cliques sizes and patching periods. \\
+
+{\color{red} TODO: Data very confusing, does not make sense. Smaller cliques need more memory. Garbage collector works irregularly...} \\
+
+The trade-off here is that smaller heap size allows to save space, but results in more frequent garbage collection which costs CPU time and energy. On the other hand, giving the program more heap space to operate in allows to run the garbage collector less frequently and thereby save the CPU cycles. 
+
+
+
 
 
 
@@ -1335,17 +1369,17 @@ As with the traffic consumption, the data suggests that the CPU usage is inverse
 \subsubsection{Key trade-offs and trends}
 One of the key conclusions that can be drawn from the data above is trade-off between the performance of the system and the amount of resources required. \\
 
-For example, the system can achieve relatively low-latency communication by making the patching period small, but this has a cost in terms of high traffic consumption, memory requirements and CPU usage. Conversely, {\funkytt N0NaMe} can operate consuming very little traffic, memory and power, but this results in communication not being real-time any more (Figure \ref{}). 
-
-
-The best way to tackle this problem depends on the specific setting where the application is to be used and associated priorities. If low latency is crucial and resources are readily available (\textit{e.g.} instant messaging on desktop machines), it may be reasonable to accept the high costs and run the application with the short patching period. If, on the other hand, system requirements and energy consumption are serious concern and low latency is less important (\textit{e.g.} email on mobile devices), the patching period can be made high. Alternatively, an \emph{adaptive} approach can be used where the patching period is dynamically adjusted -- one can imagine this \emph{e.g.} in a mobile instant messenger which communicates with low delay when open, but switches to resource-saving mode when running in background.
+For example, the system can achieve relatively low-latency communication by making the patching period small, but this has a cost in terms of high traffic consumption, memory requirements and CPU usage. Conversely, {\funkytt N0NaMe} can operate consuming very little traffic, memory and power, but this results in communication not being real-time any more (Figure \ref{fig:key_tradeoff}). 
 
 \begin{figure}[H]
     \captionsetup{width=0.9\textwidth}
     \centering
-    \includegraphics[width=0.78\linewidth]{pics/eval/cpu_vs_period.png}
-    \caption{\label{fig:cpu_vs_period} CPU usage as a function of patching period.}
+    \includegraphics[width=0.7\linewidth]{pics/eval/key_tradeoff.png}
+    \caption{\label{fig:key_tradeoff} Trade-off between latency and system requirements.}
 \end{figure}
+
+
+The best way to tackle this problem depends on the specific setting where the application is to be used and associated priorities. If low latency is crucial and resources are readily available (\textit{e.g.} instant messaging on desktop machines), it may be reasonable to accept the high costs and run the application with the short patching period. If, on the other hand, traffic and energy consumption are serious concern and low latency is less important (\textit{e.g.} email on mobile devices), the patching period can be made high. Alternatively, an \emph{adaptive} approach can be used where the patching period is dynamically adjusted -- one can imagine this \emph{e.g.} in a mobile instant messenger which communicates with low delay when open and actively used, but switches to resource-saving mode when running in background.
 
 \section{Robustness}
 \label{sec:eval.robust}
@@ -1353,8 +1387,6 @@ This section examines {\funkytt N0NaMe} from the viewpoint of stability and robu
 
 \subsection{High-load performance}
 Initially, the plan was to stress-test the protocol by constructing a clique of a large size out of instances with low patching period and making each of them author many messages per second. However, after carrying out the performance evaluation (\cref{sec:eval.perf}) it became clear that the main performance bottleneck in the system in the Store-and-Forward service. Indeed, playing out the aforementioned stress-test scenario would mostly test the Store-and-Forward, rather than the intrinsic performance limitations of the protocol design. This problem arises from the somewhat na{\"i}ve implementation and deployment of the server components. The Address Book and Store-and-Forward service are implemented as a single Python application which is deployed on the Flask's built-in development server platform, without any redundancy and load-balancing. Such a construction is acceptable for the purposes of building and running KleeQ, but cannot support high enough load to stress-test it. This problem could be partially fixed by implementing the Address Book and SaF as two separate applications and deploying them on a commercial-grade HTTP server platform (\textit{e.g.} Apache or NGINX). \\
-
-{\color{red} Local test?}
 
 %To obviate the necessity for brining the server performance up to an acceptable level, but still test how much load the protocol can handle, it was decided to perform the stress-testing \emph{locally}, so that instances listened on different ports on \texttt{localhost} and communicated over TCP.
 
@@ -1367,20 +1399,19 @@ In practice connectivity issues often happen to be more complex than just absenc
 
 \section{Usability}
 \label{sec:eval.usability}
-One of the reasons why {\funkytt N0NaMe} was given a graphical interface (GUI) was the aspiration to make it easy to use. To find out whether this goal was achieved the usability of the GUI was compared with that of the command-line interface (CLI) using the Keystroke-level Model (KLM) --- one of the key analytic summative evaluation techniques in the field of Human-Computer Interaction. \\
+One of the reasons why {\funkytt N0NaMe} was given a graphical interface (GUI) was the aspiration to make it easier to use. To find out whether this goal has been achieved, the usability of the GUI was compared with that of the command-line interface (CLI) using the Keystroke-level Model (KLM) --- one of the key analytic summative evaluation techniques in the field of Human-Computer Interaction. \\
 
 In brief, KLM is a way to estimate how much time an average user needs to perform a routine tasks when using a given interface. This is done by encoding each of the actions that are needed to complete a task as one of the standard \emph{operators}. Each operator in the model has a fixed time cost (Table \ref{tab:KLM}), and total time to complete a task can be estimated as the sum of costs of its constituent operators.
 
 \begin{table}[H]
 \centering
-\begin{tabular*}{0.79\linewidth}{c | l | l}
+\begin{tabular*}{0.79\linewidth}{c | l | c}
 Operator & Description & Time cost (sec) \\
 \hline
 K & keystroke or button press & $\approx 0.28$ \footnote{estimate for ``average non-secretary typist''} \\
 P & pointing at something with a mouse & 1.1 \\
 H & homing hands on keyboard or mouse & 0.4 \\
 M & mentally preparing for action & 1.35 \\
-DD & choice in drop-down menu & 3.05 \\
 \end{tabular*}
 \caption{\label{tab:KLM} KLM operators and associated time costs \cite{card1980keystroke}\cite{sauro2009estimating}.}
 \end{table}
@@ -1425,27 +1456,91 @@ From the data above it is easy to see that, on average, the GUI helps perform ea
 
 \section{Security}
 \label{sec:eval.security}
+This section analyses the security of {\funkytt N0NaMe}. In particular, it explains how the security properties of the KleeQ protocol are delivered by the application (\cref{subsec:eval.sec.prop}), and describes some of its limitations (\cref{subsec:eval.sec.limit}). 
 
 \subsection{Security properties}
+\label{subsec:eval.sec.prop}
+As mentioned in \cref{sec:prep.requirements}, KleeQ provides a range of security guarantees. Let us go over each of them and evaluate the extent to which our implementation manages to deliver them. 
+
+\subsubsection{Confidentiality of conversation}
+This property is achieved by using symmetric-key cryptography, as per KleeQ's design. Encryption is performed using the industry-standard AES block cipher in CTR mode, with a key of length 128-bits derived from a shared secret established via Diffie-Hellman key exchange (\cref{subsec:impl.proto.formation}).
+
+\subsubsection{Communication integrity}
+Integrity of individual messages is assured using message authentication codes (MACs), based on keying the secure hash function SHA-256 (\cref{subsec:impl.proto.formation}). Integrity of the whole conversation is verified as part of the sealing process (\cref{subsec:impl.proto.sealing}).
+
+\subsubsection{Forward secrecy}
+Forward secrecy is achieved by regularly rotating keys (\cref{subsec:prep.keyman}) and deleting sealed blocks. Because of how keys are rotated, a compromised key gives the adversary the ability to eavesdrop on messages in the current block but does not allow them to read the \emph{previous} messages. 
+
+%Since clients delete the content from blocks that have been sealed, there is nobody who can provide the plaintext to a malicious newcomer through patching. Recording the encrypted traffic does not help either --- computing the previous key needed to decrypt it is essentially equivalent to two inversions of the pre-image resistant SHA-256 hash function.
+
+\subsubsection{Backward secrecy}
+The key rotation scheme also helps ensure that a compromised key does not allow the adversary to listen to \emph{future} communications. Given the current key and therefore the ability to read messages within the current block, computing the next key also requires the knowledge of the current clique secret.
+
+\subsubsection{Authorship and participation repudiation}
+As per the original design, messages are encrypted and authenticated only using the keys derived as part of the conversation (no long-term personal keys are used). This means that, given access to the conversation transcript as well as all the cryptographic keys, one has no evidence that a particular person authored a given message. Similarly, there is no way to show that a particular person participated in the conversation.
 
 
 \subsection{Limitations}
+\label{subsec:eval.sec.limit}
+
+As mentioned before, by implementing KleeQ, {\funkytt N0NaMe} only solves the problem of \emph{conversation security} (\cref{sec:intro.overview_sec_mess}) --- it protects the \emph{content} of the conversation from the adversary, preventing eavesdropping and injection of fake messages. It does not attempt to protect the user from impersonation or transport metadata-related attacks, that need to be addressed separately. \\
+
+For example, by analysing the Store-and-Forward traffic one can fairly accurately determine the identities of conversation participants, thereby breaking the repudiation properties. This attack relies on analysing transport metadata (\textit{e.g.} IP-addresses) whose protection belongs to the realm of \emph{transport privacy} (\cref{sec:intro.overview_sec_mess}) and is therefore outside the scope of this project. \\
+
+Similarly, an adversary can gain full access to the conversation transcript and even author new messages by performing a man-in-the-middle attack when a new user is added to the clique. This is an impersonation attack, whose prevention is the responsibility of \emph{trust establishment} (\cref{sec:intro.overview_sec_mess}) mechanisms which are not considered as part of this project. 
 
 \section{Satisfaction of requirements}
 \label{sec:eval.req}
+The project has been able to satisfy each of its requirements (\cref{sec:prep.requirements}). In particular:
+\begin{itemize}
+    \item KleeQ has been implemented according to the specification, with all gaps in the description carefully filled. All the original security guarantees have been preserved.
+    \item A working messaging application based on KleeQ has been developed and tested. The application has some good performance characteristics, such as scalability, relatively low latency, low traffic consumption etc. For improved usability, a graphical interface has been produced.
+\end{itemize}
+Based on these facts, the project has been a success.
+
+
 
 \section{Summary}
+{\color{red} TODO}
 
 
 \chapter{Conclusions}
+\section{Accomplishments}
+Overall, the project has been successful in achieving each of its goals. The KleeQ protocol has been implemented, in full accordance with the original description \cite{reardon2007kleeq}. The gaps in the specification were filled where necessary so as to ensure the preservation of the security guarantees provided by the original design, keeping in mind the issues of performance and resilience to network instability. \\
 
+Based on the protocol's implementation as well as some additional auxiliary components, a prototype of a messaging application, {\funkytt N0NaMe}, has been constructed. The messenger has been thoroughly evaluated for performance, security and usability. In terms of performance, {\funkytt N0NaMe} achieves some very impressive characteristics, suggesting that KleeQ is a potentially promising solution for ubiquitous secure messaging. The cryptographic primitives used by {\funkytt N0NaMe} have been carefully chosen to avoid implementation-level vulnerabilities, and deliver the security properties of KleeQ. In an effort to make the application more usable, it has been given a graphical interface which hash been shown to help perform routine tasks faster. \\
+
+The project has greatly benefitted form comprehensive and methodical planning at the initial stage. Not only did it make the implementation process more organised and systematic, but also helped achieve elegance, modularity and extensibility in system design. 
+
+
+\section{Further work}
+As mentioned before, the main goal of this project was to implement and evaluate KleeQ. Whilst this goal has been successfully achieved, there are many other promising directions of work that would be useful to look at:
+\begin{itemize}
+    \item \textit{Distributed contact discovery.} The server-based Address Book is a quick temporary solution that allowed to put together a working system. To make the messenger completely distributed, contact discovery needs to be performed using a peer-to-peer mechanism. One way to do it would be to use a distributed hash table (DHT), as done by other P2P systems (\textit{e.g} BitTorrent).
+    \item \textit{Transport privacy.} At present {\funkytt N0NaMe} does not do anything to hide conversation metadata (\textit{e.g.} sender, recepient, time of transmission etc), and the adversary can obtain a lot of useful metadata by analysing the Store-and-Forward traffic. One way to solve this problem would be to implement SaF as a \emph{Tor hidden service}, which would allow to ensure anonymity of conversation participants. In practice, however, using Tor will incur additional delay, so more performance evaluation would be necessary.
+    \item \textit{Trust Establishment.} To protect the user against impersonation attacks, it is necessary to augment {\funkytt N0NaMe} with a routine for verifying peers' identity. One promising new trust establishment technique is the \emph{self-auditable transparency log} \cite{melara2014coniks}, which is an authority-based trust mechanism that prevents MitM-attacks by the network and permits detection of MitM-attacks by the trust authority.
+    \item \textit{Further performance improvements}. Whilst acceptable already, {\funkytt N0NaMe}'s performance could be further enhanced. For example, an effort can be made to reduce the amount of memory it consumes, as well as replace JSON with a custom-designed message format in order to generate less traffic. Given the iterative nature of patching and sealing, it would be interesting to investigate the possibility to communicate over the more lightweight UDP protocol. However, at present UDP is not natively supported by Tor, so some kind of tunnelling would be necessary which may eventually negate the performance gains.
+\end{itemize}
+
+
+\section{Final remarks}
+The emergence of new types of cyber-threats in the recent years has brought secure messaging into the spotlight of academic research and industrial effort. This project makes a practical contribution by implementing and evaluating KleeQ --- an existing conversation security protocol that possesses some promising security properties, but has not been tested before. \\
+
+The project has fully achieved its goals. The protocol has been implemented, and all the gaps left in the description by its authors have been carefully filled. The messaging application produced based on this work has demonstrated some impressive performance characteristics, which highlight KleeQ's great potential as a building block for future generations of secure messengers.
 
 
 \bibliographystyle{unsrt}
 \bibliography{bibliography}
 \addcontentsline{toc}{chapter}{Bibliography}
 
+
+\skippage
+
+
 \begin{appendices}
+
+\skippage
+
 \chapter{Project Proposal}
 \label{appendix:proposal}
 \section{Introduction and Description of the Work}

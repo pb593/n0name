@@ -82,15 +82,11 @@ def shut_down(instances):
     for inst in instances:
         inst.exit()
 
-
 if __name__ == "__main__":
-    instances = form_clique(N)
 
-    th = threading.Thread(target=mem_profiler, args=(instances[0].proc.pid,))
-    th.setDaemon(True)
-    th.start()
+    Ns = [2, 5, 10]
 
-    P = 100
-    print("Measuring memory usage over %d patching periods" % P)
-    random_chatting(instances, P)  # measure over 30 patch periods
-    shut_down(instances)
+    for N in Ns:
+        instances = form_clique(N)
+
+

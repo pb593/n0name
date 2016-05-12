@@ -12,7 +12,7 @@ class NonameInstance:
 
         self.userID = userID
         self.patch_period = patch_period
-        self.proc = sp.Popen(["java", "-jar", "../part2proj.jar", "-m", str(patch_period) , userID], stdin=sp.PIPE, stdout=sp.PIPE)
+        self.proc = sp.Popen(["java", "-Xmx3m", "-jar", "../part2proj.jar", "-m", str(patch_period) , userID], stdin=sp.PIPE, stdout=sp.PIPE)
 
     def __command(self, cmd):
         cmd = cmd + "\n"
