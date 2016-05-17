@@ -114,9 +114,9 @@ def random_chatting(instances, length):
 
 if __name__ == "__main__":
 
-    f = open('results/alltraffic_vs_N(15).txt', 'w')
+    f = open('results/alltraffic_vs_N(15)_err.txt', 'w')
 
-    for N in range(2, 16):
+    for N in range(2, 12, 3):
         # reset everything
         reset_saf()
         reset_stats()
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         instances = form_clique(N)
 
         start_stats()
-        random_chatting(instances, (N-1)*5) # chat in it
+        random_chatting(instances, (N-1)*2) # chat in it
         stop_stats()
 
         shut_down(instances) # shut down instances
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         # see what the traffic was like
         t_vec, traf_vec = process_stats()
 
-        print("%d, %.2f" % (N, float(np.sum(traf_vec)) / float((t_vec[-1] - t_vec[0]))), file=f, flush=True)
+        print("%d, %.2f, %.2f" % (N, float(np.sum(traf_vec)) / float((t_vec[-1] - t_vec[0])), 1.96 * np.std(np.diff(traf_vec)) / np.sqrt(len(traf_vec))), file=f, flush=True)
 
     f.close()
 

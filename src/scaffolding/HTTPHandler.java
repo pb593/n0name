@@ -50,7 +50,7 @@ public class HTTPHandler {
 
             }
             catch (IOException e) {
-                //System.err.print("Unable to do a HTTP GET request to the server...");
+                System.err.print("Unable to do a HTTP GET request to the server...");
                 //e.printStackTrace();
                 throw new MessengerOfflineException(); // something went wrong... (mb offline?)
             }

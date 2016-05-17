@@ -51,7 +51,7 @@ public class AddressBook {
 
     synchronized public static InetSocketAddress lookup(String userID) {
 
-        book = getAll(); // update if necessary
+        getAll(); // update if necessary
 
         return book.get(userID); // return answer from the book
 
@@ -59,7 +59,7 @@ public class AddressBook {
 
     synchronized public static boolean contains(String userID) {
 
-        book = getAll(); // update book if necessary
+        getAll(); // update book if necessary
 
         InetSocketAddress addr = lookup(userID);
         return (addr != null);
@@ -75,6 +75,7 @@ public class AddressBook {
                 timeLastUpdate = now; // update the timestamp
             } catch (MessengerOfflineException e) { // can't get the data from server, since we are offline
                 // fine, the data in our book will be stale for now...
+                System.out.println("Cannot reach the address book server. Data may be stale...");
             }
         }
 

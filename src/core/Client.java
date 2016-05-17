@@ -166,7 +166,7 @@ abstract public class Client implements Runnable {
                         }
                     } catch (MessengerOfflineException e) { // messenger is offline
                         myself.setIsOnline(false); // tell GUI we are offline
-                        Utils.sleep(10000); // wait for a bit longer, then try to reconnect
+                        Utils.sleep(10000); // wait for longer, and retry
                     }
                 }
 

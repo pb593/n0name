@@ -142,6 +142,6 @@ if __name__ == "__main__":
 
         times, trafs = process_stats(instances[0].userID)
 
-        print("%.2f, %.2f" % (per, float(np.sum(trafs)) / float((times[-1] - times[0]))), file=f, flush=True) # output the mean of M runs to a file
+        print("%.2f, %.2f, %.2f" % (per, float(np.sum(trafs)) / float((times[-1] - times[0])), 1.96 * np.std(traf_vec) / np.sqrt(len(traf_vec))), file=f, flush=True) # output the mean of M runs to a file
 
     f.close()

@@ -69,7 +69,7 @@ class Communicator extends Thread {
                         }
                     }
                 } catch (MessengerOfflineException e) { // we are offline
-                    Utils.sleep(10000); // wait for longer, then retry
+                    Utils.sleep(3 * StoreAndForward.SAF_REFRESH_RATE); // wait for longer, then retry
                 }
             }
         }

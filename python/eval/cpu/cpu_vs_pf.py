@@ -57,13 +57,15 @@ def shut_down(instances):
 
 if __name__ == "__main__":
 
-    f = open('cpu_vs_pf(10).txt', 'w')
+    N = 5
+
+    f = open('cpu_vs_pf(%de).txt' % N, 'w')
 
     periods = [1000, 3000, 5000, 8000, 10000, 30000]
 
     for per in periods:
 
-        instances = form_clique(10, per)
+        instances = form_clique(N, per)
 
         T = int(30 * per / 1000) # measure over 30 patching periods
 
@@ -75,6 +77,6 @@ if __name__ == "__main__":
 
         shut_down(instances)
 
-        print('%f, %.2f' % (per, float(np.mean(data))), file=f, flush=True)
+        print('%f: %s' % (per, ",".join([str(r) for r in data])), file=f, flush=True)
 
     f.close()
