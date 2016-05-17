@@ -37,7 +37,7 @@ public class HTTPHandler {
                 URL url = new URL(urlToRead);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setReadTimeout(2000); // read timeout at 2 sec
+                conn.setConnectTimeout(3000); // read timeout at 3 sec
                 BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 String line;
                 while ((line = rd.readLine()) != null) {
